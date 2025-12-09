@@ -886,7 +886,7 @@
                 <div style="margin-bottom: 20px;">
                     <input type="file" id="excel-upload-home" accept=".xlsx,.xls" style="display: none;" onchange="handleExcelUpload(event)">
                     <button class="btn-primary" onclick="document.getElementById('excel-upload-home').click()">📁 엑셀 파일 업로드</button>
-                    <button class="btn-primary" onclick="copyCalendarAsImageHome()" style="background: #12b886;">📷 달력 이미지 복사 (심방 제외)</button>
+                    <button class="btn-primary" onclick="copyCalendarAsImageHome()" style="background: #12b886;">📷 달력 이미지 복사 (심방/임원모임 제외)</button>
                     <span style="color: var(--muted); font-size: 0.9em;">* Excel 파일로 일정을 업데이트할 수 있습니다</span>
                 </div>
                 <div id="calendar-wrapper-home">
@@ -906,8 +906,9 @@
             <div style="margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
                 <input type="file" id="excel-upload" accept=".xlsx,.xls" style="display: none;" onchange="handleExcelUpload(event)">
                 <button class="btn-primary" onclick="document.getElementById('excel-upload').click()">📁 엑셀 파일 업로드</button>
+                <button class="btn-primary" onclick="copyEventsToPrevMonth()" style="background: var(--accent);">📅 전월 복사 (같은 요일)</button>
                 <button class="btn-primary" onclick="copyEventsToNextMonth()" style="background: var(--accent);">📅 다음달 복사 (같은 요일)</button>
-                <button class="btn-primary" onclick="copyCalendarAsImage()" style="background: #12b886;">📷 달력 이미지 복사 (심방 제외)</button>
+                <button class="btn-primary" onclick="copyCalendarAsImage()" style="background: #12b886;">📷 달력 이미지 복사 (심방/임원모임 제외)</button>
                 <span style="color: var(--muted); font-size: 0.9em;">* Excel 파일로 일정을 업데이트할 수 있습니다</span>
             </div>
             <div id="calendar-wrapper">
@@ -3556,6 +3557,106 @@
             draggedNavButton = null;
         }
 
+        // 전월 복사 기능: 같은 주 같은 요일로 복사
+        function copyEventsToPrevMonth() {
+            const currentYear = currentCalendarDate.getFullYear();
+            const currentMonth = currentCalendarDate.getMonth();
+            
+            // 전월 계산
+            const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+            const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+            
+            // 복사할 이벤트 필터링 (목차와 연동되지 않은 일정만)
+            const eventsToCopy = calendarEvents.filter(event => {
+                // 심방일정 제외
+                if (event.visitName || event.title.match(/심방$/)) {
+                    return false;
+                }
+                // 부서임원모임 제외
+                if (event.meetingId || event.title === '부서 임원모임') {
+                    return false;
+                }
+                // 식사준비 제외
+                if (event.mealId || event.title.match(/^식사 준비/)) {
+                    return false;
+                }
+                // 부서교제 제외
+                if (event.fellowshipId || event.title.match(/^부서교제/)) {
+                    return false;
+                }
+                // 현재 월의 이벤트만
+                const eventDate = new Date(event.date);
+                return eventDate.getFullYear() === currentYear && eventDate.getMonth() === currentMonth;
+            });
+            
+            if (eventsToCopy.length === 0) {
+                alert('복사할 일정이 없습니다.');
+                return;
+            }
+            
+            if (!confirm(`${eventsToCopy.length}개의 일정을 전월로 복사하시겠습니까?\n(같은 주, 같은 요일로 복사됩니다)`)) {
+                return;
+            }
+            
+            const newEvents = [];
+            
+            eventsToCopy.forEach(event => {
+                const eventDate = new Date(event.date);
+                const eventDayOfWeek = eventDate.getDay(); // 요일 (0=일요일, 6=토요일)
+                const weekOfMonth = Math.floor((eventDate.getDate() - 1) / 7); // 몇 번째 주인지
+                
+                // 전월의 같은 주, 같은 요일 계산
+                const firstDayOfPrevMonth = new Date(prevYear, prevMonth, 1);
+                const firstDayOfWeek = firstDayOfPrevMonth.getDay();
+                
+                // 첫 번째 주의 같은 요일 찾기
+                let dayOffset = eventDayOfWeek - firstDayOfWeek;
+                if (dayOffset < 0) dayOffset += 7;
+                
+                const targetDay = 1 + dayOffset + (weekOfMonth * 7);
+                
+                // 전월의 마지막 날 확인
+                const lastDayOfPrevMonth = new Date(prevYear, prevMonth + 1, 0).getDate();
+                
+                if (targetDay <= lastDayOfPrevMonth) {
+                    const newDate = new Date(prevYear, prevMonth, targetDay);
+                    const newDateStr = formatDateForCalendar(newDate);
+                    
+                    // 종료일도 계산 (연속일정인 경우)
+                    let newEndDateStr = newDateStr;
+                    if (event.endDate && event.endDate !== event.date) {
+                        const endDate = new Date(event.endDate);
+                        const daysDiff = Math.floor((endDate - eventDate) / (1000 * 60 * 60 * 24));
+                        const newEndDate = new Date(newDate);
+                        newEndDate.setDate(newEndDate.getDate() + daysDiff);
+                        newEndDateStr = formatDateForCalendar(newEndDate);
+                    }
+                    
+                    // 새 이벤트 생성
+                    const newEvent = {
+                        id: Date.now().toString() + '_' + Math.random(),
+                        date: newDateStr,
+                        title: event.title,
+                        color: event.color,
+                        endDate: newEndDateStr,
+                        description: event.description || '',
+                        isMultiDay: event.isMultiDay || (event.endDate && event.endDate !== event.date)
+                    };
+                    
+                    newEvents.push(newEvent);
+                }
+            });
+            
+            if (newEvents.length > 0) {
+                calendarEvents = calendarEvents.concat(newEvents);
+                saveToFirebase('youthCalendarEvents', calendarEvents);
+                alert(`${newEvents.length}개의 일정이 전월로 복사되었습니다.`);
+                renderCalendar();
+            } else {
+                alert('복사할 수 있는 일정이 없습니다.');
+            }
+        }
+
         // 다음달 복사 기능: 같은 주 같은 요일로 복사
         function copyEventsToNextMonth() {
             const currentYear = currentCalendarDate.getFullYear();
@@ -3658,42 +3759,60 @@
 
         // 달력을 이미지로 복사 (심방일정 제외) - 섹션 화면용
         async function copyCalendarAsImage() {
-            const calendarGrid = document.getElementById('calendar-grid');
-            if (!calendarGrid) {
+            const calendarWrapper = document.getElementById('calendar-wrapper');
+            if (!calendarWrapper) {
                 alert('캘린더를 찾을 수 없습니다.');
                 return;
             }
-            await copyCalendarAsImageFromElement(calendarGrid);
+            await copyCalendarAsImageFromElement(calendarWrapper, 'calendar-grid');
         }
 
         // 달력을 이미지로 복사 (심방일정 제외) - 홈 화면용
         async function copyCalendarAsImageHome() {
-            const calendarGrid = document.getElementById('calendar-grid-home');
-            if (!calendarGrid) {
+            const calendarWrapper = document.getElementById('calendar-wrapper-home');
+            if (!calendarWrapper) {
                 alert('캘린더를 찾을 수 없습니다.');
                 return;
             }
-            await copyCalendarAsImageFromElement(calendarGrid);
+            await copyCalendarAsImageFromElement(calendarWrapper, 'calendar-grid-home');
         }
 
         // 공통 이미지 복사 함수
-        async function copyCalendarAsImageFromElement(calendarGrid) {
+        async function copyCalendarAsImageFromElement(calendarWrapper, gridId) {
+            const calendarGrid = document.getElementById(gridId);
+            if (!calendarGrid) {
+                alert('캘린더 그리드를 찾을 수 없습니다.');
+                return;
+            }
 
-            // 심방 일정 숨기기
+            // 심방 일정 및 부서임원모임 숨기기
             const visitEvents = calendarGrid.querySelectorAll('.calendar-event');
             const hiddenEvents = [];
             visitEvents.forEach(eventEl => {
                 const eventId = eventEl.dataset.eventId;
                 const event = calendarEvents.find(e => e.id === eventId);
-                if (event && (event.visitName || event.title.match(/심방$/))) {
+                if (event && (
+                    event.visitName || 
+                    event.title.match(/심방$/) ||
+                    event.meetingId ||
+                    event.title === '부서 임원모임'
+                )) {
                     eventEl.style.display = 'none';
                     hiddenEvents.push(eventEl);
                 }
             });
 
+            // 오늘 날짜 하이라이트 제거
+            const todayElements = calendarGrid.querySelectorAll('.calendar-today');
+            const removedTodayClasses = [];
+            todayElements.forEach(el => {
+                el.classList.remove('calendar-today');
+                removedTodayClasses.push(el);
+            });
+
             try {
-                // html2canvas로 이미지 생성
-                const canvas = await html2canvas(calendarGrid, {
+                // html2canvas로 이미지 생성 (달력 헤더 포함)
+                const canvas = await html2canvas(calendarWrapper, {
                     backgroundColor: '#ffffff',
                     scale: 2,
                     logging: false,
@@ -3732,6 +3851,12 @@
                 hiddenEvents.forEach(eventEl => {
                     eventEl.style.display = '';
                 });
+                // 제거한 오늘 날짜 하이라이트 다시 추가
+                if (typeof removedTodayClasses !== 'undefined') {
+                    removedTodayClasses.forEach(el => {
+                        el.classList.add('calendar-today');
+                    });
+                }
             }
         }
 

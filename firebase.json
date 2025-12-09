@@ -6,7 +6,11 @@
       "**/.*",
       "**/node_modules/**",
       "*.md",
-      ".git/**"
+      "*.bat",
+      "*.ps1",
+      "*.txt",
+      ".git/**",
+      "archive/**"
     ],
     "rewrites": [
       {
