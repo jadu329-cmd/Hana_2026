@@ -1,0 +1,12 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 모든 컬렉션에 대한 읽기/쓰기 허용
+    // 프로덕션 환경에서는 인증 기반 규칙으로 변경 권장
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
+
+

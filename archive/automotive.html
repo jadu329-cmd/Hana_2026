@@ -1,0 +1,1636 @@
+<!DOCTYPE html>
+
+<html lang="ko">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>SCM 개발 보고서</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+
+        /* Market Report Generator - Base Styles */
+/* Extracted from: 글로벌 러버트랙(MHE&CTL) 시장 전략 보고서 */
+
+
+* {
+
+    margin: 0;
+
+    padding: 0;
+
+    box-sizing: border-box;
+
+}
+
+
+
+:root {
+    --bg: #fbfbfc;
+    --surface: #ffffff;
+    --text: #2f2f33;
+    --muted: #666a73;
+    --border: #e9ecf1;
+    --primary-50: #f7f5ff;
+    --primary-100: #efeaff;
+    --primary-200: #ded5ff;
+    --primary-300: #c4b6ff;
+    --primary-400: #a08dff;
+    --primary-500: #7b64ff;
+    --primary-600: #6a54f0;
+    --accent: #12b886;
+    --shadow: 0 8px 30px rgba(17, 17, 26, 0.05);
+}
+
+body {
+    font-family: 'Noto Sans KR', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+}
+
+
+
+.container {
+
+    max-width: 1400px;
+
+    margin: 0 auto;
+
+    padding: 40px 20px;
+
+}
+
+
+
+header {
+    background: linear-gradient(180deg, var(--surface) 0%, #f7f8fb 100%);
+    padding: 56px 40px;
+    text-align: center;
+    border-radius: 20px;
+    box-shadow: var(--shadow);
+    margin-bottom: 36px;
+    border: 1px solid var(--border);
+}
+
+
+
+h1 {
+    color: var(--text);
+    font-size: 2.4em;
+    margin-bottom: 8px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+
+
+.subtitle {
+    color: var(--muted);
+    font-size: 1.05em;
+    font-weight: 400;
+}
+
+
+
+.home-section {
+    background: var(--surface);
+    padding: 36px;
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    margin-bottom: 28px;
+    border: 1px solid var(--border);
+}
+
+
+
+.button-grid {
+
+    display: grid;
+
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+
+    gap: 25px;
+
+    margin-top: 40px;
+
+}
+
+
+
+.nav-button {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 22px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    text-align: left;
+}
+
+
+
+.nav-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(17, 17, 26, 0.06);
+    border-color: var(--primary-200);
+}
+
+
+
+.nav-button h3 {
+    color: var(--text);
+    margin-bottom: 6px;
+    font-size: 1.15em;
+}
+
+
+
+.nav-button p {
+    color: var(--muted);
+    font-size: 0.95em;
+}
+
+
+
+.content-section {
+    display: none;
+    background: var(--surface);
+    padding: 36px;
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    margin-bottom: 28px;
+    border: 1px solid var(--border);
+}
+
+
+
+.content-section.active {
+
+    display: block;
+
+    animation: fadeIn 0.5s ease;
+
+}
+
+
+
+@keyframes fadeIn {
+
+    from { opacity: 0; transform: translateY(20px); }
+
+    to { opacity: 1; transform: translateY(0); }
+
+}
+
+
+
+h2 {
+    color: var(--text);
+    font-size: 1.8em;
+    margin-bottom: 22px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--primary-100);
+}
+
+
+
+h3 {
+    color: var(--text);
+    font-size: 1.25em;
+    margin-top: 28px;
+    margin-bottom: 14px;
+}
+
+
+
+h4 {
+    color: var(--muted);
+    font-size: 1.05em;
+    margin-top: 22px;
+    margin-bottom: 10px;
+}
+
+
+
+.back-button {
+    background: linear-gradient(180deg, var(--primary-500), var(--primary-600));
+    color: #fff;
+    border: none;
+    padding: 12px 22px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 0.95em;
+    margin-top: 28px;
+    margin-bottom: 0;
+    transition: transform 0.15s ease, box-shadow 0.2s ease;
+    box-shadow: 0 8px 24px rgba(123, 100, 255, 0.25);
+    font-weight: 600;
+}
+
+
+
+.back-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 28px rgba(123, 100, 255, 0.28);
+}
+
+
+
+.stat-card {
+    background: linear-gradient(180deg, var(--surface), #fafbff);
+    padding: 20px;
+    border-radius: 12px;
+    margin: 18px 0;
+    border: 1px solid var(--border);
+}
+
+
+
+.stat-grid {
+
+    display: grid;
+
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+
+    gap: 20px;
+
+    margin: 25px 0;
+
+}
+
+
+
+.stat-item {
+    background: var(--surface);
+    padding: 16px;
+    border-radius: 10px;
+    text-align: center;
+    border: 1px solid var(--border);
+}
+
+
+
+.stat-value {
+    font-size: 1.6em;
+    font-weight: 700;
+    color: var(--primary-600);
+    margin-bottom: 6px;
+}
+
+
+
+.stat-label {
+    color: var(--muted);
+    font-size: 0.9em;
+}
+
+
+
+.chart-container {
+    background: var(--surface);
+    padding: 20px;
+    border-radius: 12px;
+    margin: 24px 0;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+}
+
+
+
+table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin: 22px 0;
+    background: var(--surface);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+}
+
+
+
+th {
+    background: linear-gradient(180deg, var(--primary-50), var(--primary-100));
+    color: var(--text);
+    padding: 14px 16px;
+    text-align: left;
+    font-weight: 600;
+}
+
+
+
+td {
+    padding: 14px 16px;
+    border-top: 1px solid var(--border);
+}
+
+
+
+tr:hover {
+    background: #fbfbff;
+}
+
+
+
+.highlight {
+    background: linear-gradient(180deg, #fffefb, #fffdfa);
+    padding: 18px;
+    border-radius: 12px;
+    margin: 18px 0;
+    border: 1px solid #f2ead6;
+}
+
+
+
+.swot-grid {
+
+    display: grid;
+
+    grid-template-columns: repeat(2, 1fr);
+
+    gap: 20px;
+
+    margin: 25px 0;
+
+}
+
+
+
+.swot-item {
+
+    padding: 25px;
+
+    border-radius: 12px;
+
+    border: 2px solid;
+
+}
+
+
+
+.strength {
+
+    background: linear-gradient(135deg, #e8f5e8 0%, #dceedc 100%);
+
+    border-color: #a5d5a5;
+
+}
+
+
+
+.weakness {
+
+    background: linear-gradient(135deg, #ffe8e8 0%, #ffdcdc 100%);
+
+    border-color: #f5a5a5;
+
+}
+
+
+
+.opportunity {
+
+    background: linear-gradient(135deg, #e8f0f5 0%, #dce8ee 100%);
+
+    border-color: #a5c5d5;
+
+}
+
+
+
+.threat {
+
+    background: linear-gradient(135deg, #f5e8f0 0%, #eedce8 100%);
+
+    border-color: #d5a5c5;
+
+}
+
+
+
+ul, ol {
+
+    margin-left: 25px;
+
+    margin-top: 15px;
+
+    margin-bottom: 15px;
+
+}
+
+
+
+li {
+
+    margin-bottom: 10px;
+
+    line-height: 1.7;
+
+}
+
+
+
+.competitor-card {
+
+    background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
+
+    padding: 25px;
+
+    border-radius: 12px;
+
+    margin: 20px 0;
+
+    border: 2px solid #f5d5d5;
+
+}
+
+
+
+.region-section {
+
+    background: linear-gradient(135deg, #e8f5fa 0%, #dceef5 100%);
+
+    padding: 25px;
+
+    border-radius: 12px;
+
+    margin: 25px 0;
+
+    border-left: 5px solid #a5c5d5;
+
+}
+
+
+
+strong {
+    color: var(--primary-600);
+}
+
+/* Utilities */
+.muted { color: var(--muted); }
+.pill { display:inline-block; padding:6px 10px; border-radius:999px; font-size:12px; background:var(--primary-50); color:var(--primary-600); border:1px solid var(--primary-100); }
+
+/* Calendar Styles */
+#calendar-wrapper {
+    margin-top: 20px;
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 10px 0;
+}
+
+.calendar-nav-btn {
+    background: var(--primary-500);
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1.2em;
+    transition: background 0.2s ease;
+}
+
+.calendar-nav-btn:hover {
+    background: var(--primary-600);
+}
+
+#calendar-month-year {
+    margin: 0;
+    font-size: 1.3em;
+    color: var(--text);
+}
+
+#calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    background: var(--surface);
+    padding: 10px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+}
+
+.calendar-day-header {
+    text-align: center;
+    font-weight: 600;
+    padding: 10px;
+    color: var(--muted);
+    font-size: 0.9em;
+}
+
+.calendar-day-header.sunday {
+    color: #e74c3c;
+}
+
+.calendar-day-header.saturday {
+    color: #3498db;
+}
+
+.calendar-day {
+    min-height: 80px;
+    padding: 8px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    position: relative;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.calendar-day:hover {
+    background: var(--primary-50);
+}
+
+.calendar-day.other-month {
+    opacity: 0.3;
+    background: #f5f5f5;
+}
+
+.calendar-day-number {
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: var(--text);
+}
+
+.calendar-day.sunday .calendar-day-number {
+    color: #e74c3c;
+}
+
+.calendar-day.saturday .calendar-day-number {
+    color: #3498db;
+}
+
+.calendar-day.holiday {
+    background: #fff5f5;
+}
+
+.calendar-day.holiday .calendar-day-number {
+    color: #e74c3c;
+    font-weight: 700;
+}
+
+.calendar-holiday-label {
+    font-size: 0.65em;
+    color: #e74c3c;
+    font-weight: 600;
+    margin-top: 2px;
+}
+
+.calendar-event {
+    font-size: 0.75em;
+    padding: 2px 4px;
+    margin: 2px 0;
+    background: var(--primary-200);
+    color: var(--primary-700);
+    border-radius: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: move;
+    user-select: none;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.calendar-event:hover {
+    background: var(--primary-300);
+}
+
+.calendar-event.dragging {
+    opacity: 0.5;
+    transform: scale(0.95);
+}
+
+.calendar-day.drag-over {
+    background: var(--primary-100);
+    border-color: var(--primary-400);
+    border-width: 2px;
+}
+
+.calendar-today {
+    background: var(--primary-100);
+    border-color: var(--primary-400);
+}
+
+/* Print styles: show all sections */
+@media print {
+    body { background: #fff; }
+    .home-section { display: none !important; }
+    .content-section { display: block !important; box-shadow: none; border: none; padding: 0; }
+    header { box-shadow: none; border: none; }
+}
+
+
+
+    </style>
+
+</head>
+
+<body>
+
+    <div class="container">
+
+        <header>
+
+    <h1>SCM 개발 보고서</h1>
+
+    <p class="subtitle">2025-2030 Global & Korea Outlook</p>
+
+    <p class="subtitle">전동화(EV)·소프트웨어 정의차량(SDV)·공급망 트렌드</p>
+
+</header>
+
+
+
+
+        <div id="home" class="home-section">
+
+    <h2>📋 보고서 목차</h2>
+
+    <div class="button-grid">
+
+        
+        <div class="nav-button" onclick="showSection('exec')">
+            <h3>요약 (Executive Summary)</h3>
+            <p>핵심 지표와 전망</p>
+        </div>
+
+        <div class="nav-button" onclick="showSection('segments')">
+            <h3>요청사항</h3>
+            <p>EV/하이브리드/ICE</p>
+        </div>
+
+        <div class="nav-button" onclick="showSection('korea')">
+            <h3>국내 전망</h3>
+            <p>수출/부품/배터리</p>
+        </div>
+
+        <div class="nav-button" onclick="showSection('regions')">
+            <h3>지역 전망</h3>
+            <p>북미·유럽·중국</p>
+        </div>
+
+        <div class="nav-button" onclick="showSection('oems')">
+            <h3>주요 OEM</h3>
+            <p>리더십 & 전략</p>
+        </div>
+
+        <div class="nav-button" onclick="showSection('value-chain')">
+            <h3>산업 밸류체인</h3>
+            <p>Upstream~Aftermarket</p>
+        </div>
+
+        <div class="nav-button" onclick="showSection('compliance')">
+            <h3>규제/인증</h3>
+            <p>UNECE·ISO·ASPICE</p>
+        </div>
+
+        <div class="nav-button" onclick="showSection('procurement')">
+            <h3>조달/공급망</h3>
+            <p>RFQ~SOP/PPAP</p>
+        </div>
+
+        <div class="nav-button" onclick="showSection('risk')">
+            <h3>리스크 관리</h3>
+            <p>가격·수율·규제</p>
+        </div>
+
+        <div class="nav-button" onclick="showSection('entry')">
+            <h3>시장 진입 전략</h3>
+            <p>Phase 1~3</p>
+        </div>
+
+        <div class="nav-button" onclick="showSection('actions')">
+            <h3>실행 과제</h3>
+            <p>우선순위</p>
+        </div>
+
+        <div class="nav-button" onclick="showSection('finance')">
+            <h3>재무 전망</h3>
+            <p>3개년</p>
+        </div>
+
+    </div>
+
+</div>
+
+
+
+
+        
+<div id="exec" class="content-section">
+    <h2>요약 (Executive Summary)</h2>
+<div class="stat-card">
+  <h3>핵심 지표</h3>
+  <div class="stat-grid">
+    <div class="stat-item"><div class="stat-value">7,900만대</div><div class="stat-label">2024 전세계 완성차 판매</div></div>
+    <div class="stat-item"><div class="stat-value">14~16%</div><div class="stat-label">2025 EV(배터리) 점유율</div></div>
+    <div class="stat-item"><div class="stat-value">9~11%</div><div class="stat-label">2025 소프트웨어 매출 비중(Top OEM)</div></div>
+    <div class="stat-item"><div class="stat-value">4~5%</div><div class="stat-label">글로벌 CAGR(완성차 2025~2030)</div></div>
+  </div>
+</div>
+<div class="highlight">
+  <h4>핵심 인사이트</h4>
+  <ul>
+    <li><strong>전동화 가속:</strong> 배터리 원가 하락과 충전 인프라 확대가 EV 보급 확대에 기여.</li>
+    <li><strong>SDV 전환:</strong> OTA, 차량용 OS, 앱 마켓 등 소프트웨어 수익모델 부상.</li>
+    <li><strong>공급망 리디자인:</strong> 배터리 소재 내재화, 지역 블록화에 따른 현지화 심화.</li>
+  </ul>
+</div>
+<div class="chart-container">
+  <h4>EV 침투율 전망</h4>
+  <canvas id="auto_ev"></canvas>
+</div>
+    <button class="back-button" onclick="showHome()">← 목차로 돌아가기</button>
+</div>
+
+
+<div id="segments" class="content-section">
+    <h2>요청사항</h2>
+<table>
+  <thead><tr><th>No.</th><th>요청사항</th><th>상세 내용</th><th>진행 사항</th><th>요청일</th><th>완료일</th><th>참고 파일</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>복수 자재 조회 기능 추가</td><td>SAP와 동일하게 복수 자재 업로드 후 조회 기능 구현</td><td>개발 공수가 많아 개발 X</td><td>10/2</td><td></td><td>SCM 요청사항_1차.ppt</td></tr>
+    <tr><td>2</td><td>물류정보 영업창고 데이터 점검</td><td>값이 - 로 나오는 오류가 있음</td><td></td><td>10/2</td><td></td><td>SCM 요청사항_1차.ppt</td></tr>
+    <tr><td>3</td><td>압출 생산계획 관리 레이아웃 수정</td><td>업체가 요구한 자재 행을 젤 위로 올리는 기능 추가<br>업체가 요구한 자재 행의 셀 색 변경 기능 추가</td><td>개발 완료</td><td>10/2</td><td>10/2</td><td>SCM 요청사항_1차.ppt</td></tr>
+    <tr><td></td><td></td><td>작업량 입력 시 주간/야간 각각 총 압출 시간 계산식 추가 (1행에 나오도록)</td><td></td><td>10/2</td><td>10/16</td><td>SCM 요청사항_1차.ppt</td></tr>
+    <tr><td></td><td>엑셀과 동일하게 불필요한 열 숨김 기능 추가</td><td></td><td>개발 불가</td><td>10/2</td><td></td><td>SCM 요청사항_1차.ppt</td></tr>
+    <tr><td></td><td></td><td>스펙 및 압출속도 데이터 검증 필요 (잘못된 데이터를 사용 중으로 추측)</td><td></td><td>10/2</td><td></td><td>SCM 요청사항_1차.ppt</td></tr>
+    <tr><td></td><td></td><td>협력사 재고에 SCM 재고와 SAP 재고를 둘 다 볼 수 있도록 변경 요청</td><td></td><td>10/2</td><td></td><td>SCM 요청사항_1차.ppt</td></tr>
+    <tr><td></td><td></td><td>엑셀 필터처럼 업체 요구 0인 값 숨김 기능 협의</td><td></td><td>10/2</td><td></td><td></td></tr>
+  </tbody>
+</table>
+<div class="chart-container" id="calendar-container">
+  <h4>개발 일정 캘린더</h4>
+  <div id="calendar-wrapper">
+    <div class="calendar-header">
+      <button id="prev-month" class="calendar-nav-btn">←</button>
+      <h4 id="calendar-month-year"></h4>
+      <button id="next-month" class="calendar-nav-btn">→</button>
+    </div>
+    <div id="calendar-grid"></div>
+  </div>
+</div>
+    <button class="back-button" onclick="showHome()">← 목차로 돌아가기</button>
+</div>
+
+
+<div id="korea" class="content-section">
+    <h2>국내(한국) 전망</h2>
+<div class="highlight">
+  <h4>요점</h4>
+  <ul>
+    <li>완성차 수출 회복세, 고부가 전동화 라인업 확대.</li>
+    <li>2차전지 밸류체인 투자 지속(소재/장비/리사이클링).</li>
+    <li>소프트웨어·전자부품 수요 증가(센서, 제어기, 통신).</li>
+  </ul>
+</div>
+<div class="chart-container">
+  <h4>국내 수출/생산 전망(예시)</h4>
+  <canvas id="auto_kr"></canvas>
+</div>
+    <button class="back-button" onclick="showHome()">← 목차로 돌아가기</button>
+</div>
+
+
+<div id="regions" class="content-section">
+    <h2>지역별 전망</h2>
+<table>
+  <thead><tr><th>지역</th><th>2024 판매(추정)</th><th>2030 CAGR</th><th>특징</th></tr></thead>
+  <tbody>
+    <tr><td>북미</td><td>~1,700만대</td><td>~3%</td><td>픽업·SUV 강세, IRA에 따른 현지화</td></tr>
+    <tr><td>유럽</td><td>~1,500만대</td><td>~2%</td><td>CO2 규제 강화, EV 보급 가속</td></tr>
+    <tr><td>중국</td><td>~2,800만대</td><td>~4%</td><td>NEV 경쟁 격화, 가격 경쟁 심화</td></tr>
+  </tbody>
+</table>
+<div class="chart-container">
+  <h4>지역별 EV 침투율(예시)</h4>
+  <canvas id="auto_regions"></canvas>
+</div>
+    <button class="back-button" onclick="showHome()">← 목차로 돌아가기</button>
+</div>
+
+
+<div id="oems" class="content-section">
+    <h2>주요 OEM 전망</h2>
+<table>
+  <thead><tr><th>OEM</th><th>강점</th><th>리스크</th><th>전략</th></tr></thead>
+  <tbody>
+    <tr><td>BYD</td><td>배터리 내재화, 원가 경쟁력</td><td>해외 브랜드 인지도</td><td>해외 공장/유통망 확대</td></tr>
+    <tr><td>Tesla</td><td>SW/OTA, 브랜드 파워</td><td>라인업 공백, 경쟁 심화</td><td>차종 확대, 에너지 사업 연계</td></tr>
+    <tr><td>Hyundai·Kia</td><td>전동화 라인업, 품질/디자인</td><td>IRA 대응 비용</td><td>북미 현지화, SDV 투자 확대</td></tr>
+    <tr><td>VW Group</td><td>유럽 네트워크</td><td>SW 전환 속도</td><td>플랫폼 단순화, SW 파트너십</td></tr>
+    <tr><td>Toyota</td><td>HEV 리더십, 제조 효율</td><td>배터리 EV 전환 속도</td><td>차세대 배터리, SDV 전환</td></tr>
+  </tbody>
+</table>
+<div class="chart-container">
+  <h4>OEM 전동화 지수(예시)</h4>
+  <canvas id="auto_oems"></canvas>
+</div>
+    <button class="back-button" onclick="showHome()">← 목차로 돌아가기</button>
+</div>
+
+
+<div id="value-chain" class="content-section">
+    <h2>산업 밸류체인 분석</h2>
+<table>
+  <thead><tr><th>단계</th><th>주요 플레이어</th><th>마진/특성</th><th>핵심 활동</th></tr></thead>
+  <tbody>
+    <tr><td>Upstream</td><td>리튬/니켈/코발트, 양/음극재, 전해질</td><td>원자재/소재 변동성</td><td>장기 계약, 내재화/리사이클링</td></tr>
+    <tr><td>Cell/Module</td><td>CATL, LGES, BYD, 삼성SDI, SK On</td><td>규모/수율이익</td><td>화학/공정 최적화</td></tr>
+    <tr><td>Tier1(전장/시스템)</td><td>Bosch, Continental, ZF, 현대모비스</td><td>고부가, 품질/인증</td><td>ECU/센서/ADAS 통합</td></tr>
+    <tr><td>OEM</td><td>현대/기아, Toyota, Tesla, VW, BYD</td><td>브랜드/플랫폼</td><td>SDV/OTA/플랫폼 전략</td></tr>
+    <tr><td>Aftermarket/서비스</td><td>정비, 충전/에너지, 소프트웨어</td><td>반복 수익</td><td>구독/데이터/서비스</td></tr>
+  </tbody>
+</table>
+<div class="chart-container">
+  <h4>예시: 단계별 리드타임(주)</h4>
+  <canvas id="auto_supply_lead"></canvas>
+</div>
+    <button class="back-button" onclick="showHome()">← 목차로 돌아가기</button>
+</div>
+
+
+<div id="compliance" class="content-section">
+    <h2>규제/인증 및 표준</h2>
+<ul>
+  <li><strong>UNECE R155/R156:</strong> 사이버보안/소프트웨어 업데이트 관리 의무</li>
+  <li><strong>ISO 26262:</strong> 기능 안전(ASIL) 프로세스 및 검증</li>
+  <li><strong>ISO/SAE 21434:</strong> 차량 사이버보안 엔지니어링</li>
+  <li><strong>ASPICE:</strong> 소프트웨어/시스템 개발 프로세스 성숙도</li>
+  <li><strong>전파/형식승인:</strong> 통신장비, OTA 관련 승인 체계</li>
+</ul>
+<div class="highlight">
+  <h4>시사점</h4>
+  <ul>
+    <li>OEM 납품엔 프로세스 인증과 문서 패키지(APQP/PPAP)가 필수</li>
+    <li>OTA/SDV 전환으로 보안·업데이트 체계의 상시 운영 필요</li>
+  </ul>
+</div>
+    <button class="back-button" onclick="showHome()">← 목차로 돌아가기</button>
+</div>
+
+
+<div id="procurement" class="content-section">
+    <h2>조달 및 공급망</h2>
+<table>
+  <thead><tr><th>단계</th><th>기간</th><th>주요 활동</th><th>성공 요인</th></tr></thead>
+  <tbody>
+    <tr><td>RFQ/소싱</td><td>4~8주</td><td>견적/기술검토</td><td>원가/성능/리스크</td></tr>
+    <tr><td>개발/샘플</td><td>3~6개월</td><td>시제품/검증</td><td>품질/납기/문서화</td></tr>
+    <tr><td>PPAP 승인</td><td>2~4주</td><td>품질 승인</td><td>공정능력(Cpk)</td></tr>
+    <tr><td>SOP/양산</td><td>프로그램</td><td>생산/공급</td><td>JIT/변동 대응</td></tr>
+  </tbody>
+</table>
+    <button class="back-button" onclick="showHome()">← 목차로 돌아가기</button>
+</div>
+
+
+<div id="risk" class="content-section">
+    <h2>리스크 관리</h2>
+<table>
+  <thead><tr><th>리스크</th><th>가능성</th><th>영향</th><th>대응</th></tr></thead>
+  <tbody>
+    <tr><td>배터리 원가/공급</td><td>중간</td><td>높음</td><td>장기계약/대체소재/리사이클</td></tr>
+    <tr><td>규제/인증 지연</td><td>낮음</td><td>높음</td><td>사전 컨설팅/사전심사</td></tr>
+    <tr><td>수율/품질 이슈</td><td>중간</td><td>중간</td><td>공정능력/표준작업/감사</td></tr>
+    <tr><td>수요 변동</td><td>중간</td><td>중간</td><td>유연 생산/다변화</td></tr>
+  </tbody>
+</table>
+    <button class="back-button" onclick="showHome()">← 목차로 돌아가기</button>
+</div>
+
+
+<div id="entry" class="content-section">
+    <h2>시장 진입 전략</h2>
+<table>
+  <thead><tr><th>단계</th><th>기간</th><th>핵심 과제</th><th>KPI</th></tr></thead>
+  <tbody>
+    <tr><td>Phase 1</td><td>0~6개월</td><td>파일럿 PoC, PPAP 준비, 인증 갭 분석</td><td>PoC 2건, 승인 1건</td></tr>
+    <tr><td>Phase 2</td><td>6~12개월</td><td>양산 라인 셋업, Tier1 파트너십</td><td>양산 1건, 파트너 2곳</td></tr>
+    <tr><td>Phase 3</td><td>1~2년</td><td>범용 플랫폼, 지역 확장</td><td>고객 5곳, 월매출 목표</td></tr>
+  </tbody>
+</table>
+    <button class="back-button" onclick="showHome()">← 목차로 돌아가기</button>
+</div>
+
+
+<div id="actions" class="content-section">
+    <h2>실행 과제</h2>
+<table>
+  <thead><tr><th>우선순위</th><th>과제</th><th>담당</th><th>기한</th></tr></thead>
+  <tbody>
+    <tr><td>최우선</td><td>R155/R156 프로세스 수립</td><td>품질/보안</td><td>2개월</td></tr>
+    <tr><td>높음</td><td>PPAP 템플릿/샘플 패키지</td><td>품질</td><td>1개월</td></tr>
+    <tr><td>높음</td><td>Tier1 공동세일즈 플랜</td><td>영업</td><td>2개월</td></tr>
+    <tr><td>중간</td><td>유럽/북미 인증 라우팅</td><td>규제</td><td>3개월</td></tr>
+  </tbody>
+</table>
+    <button class="back-button" onclick="showHome()">← 목차로 돌아가기</button>
+</div>
+
+
+<div id="finance" class="content-section">
+    <h2>재무 전망</h2>
+<div class="chart-container">
+  <h4>3개년 매출/이익 예시</h4>
+  <canvas id="auto_fin"></canvas>
+</div>
+    <button class="back-button" onclick="showHome()">← 목차로 돌아가기</button>
+</div>
+
+
+
+    </div>
+
+
+
+    <script>
+
+        // Market Report Generator - JavaScript Functions
+
+
+
+function showSection(sectionId) {
+
+    const targetSection = document.getElementById(sectionId);
+
+    if (!targetSection) {
+
+        console.error(`Section ${sectionId} not found`);
+
+        alert(`해당 섹션(${sectionId})은 아직 준비 중입니다.`);
+
+        return;
+
+    }
+
+
+
+    document.querySelectorAll(".content-section").forEach(section => {
+
+        section.classList.remove("active");
+
+    });
+
+    document.getElementById("home").style.display = "none";
+
+    targetSection.classList.add("active");
+
+    window.scrollTo(0, 0);
+
+}
+
+
+
+function showHome() {
+
+    document.querySelectorAll(".content-section").forEach(section => {
+
+        section.classList.remove("active");
+
+    });
+
+    document.getElementById("home").style.display = "block";
+
+    window.scrollTo(0, 0);
+
+}
+
+
+
+// Initialize charts when document is loaded
+
+document.addEventListener('DOMContentLoaded', function() {
+
+    // Chart.js defaults for consistent visuals
+    if (window.Chart) {
+        Chart.defaults.font.family = "'Noto Sans KR','Segoe UI',Tahoma,Geneva,Verdana,sans-serif";
+        Chart.defaults.color = '#495057';
+        Chart.defaults.plugins.legend.labels.boxWidth = 12;
+        Chart.defaults.elements.line.tension = 0.25;
+        Chart.defaults.datasets.line.borderWidth = 2;
+        Chart.defaults.animation.duration = 600;
+    }
+
+    // Auto-initialize all charts
+    initializeCharts();
+
+});
+
+
+
+function initializeCharts() {
+
+    // This function will be called to initialize all Chart.js charts
+
+    // Individual chart configurations will be inserted by the generator
+
+}
+
+
+
+// Chart creation helper function
+
+function createChart(canvasId, config) {
+
+    const ctx = document.getElementById(canvasId);
+
+    if (ctx) {
+
+        return new Chart(ctx, config);
+
+    }
+
+    return null;
+
+}
+
+
+
+// Utility function to format numbers
+
+function formatNumber(num, decimals = 0) {
+
+    return num.toLocaleString('ko-KR', {
+
+        minimumFractionDigits: decimals,
+
+        maximumFractionDigits: decimals
+
+    });
+
+}
+
+
+
+// Utility function to format currency
+
+function formatCurrency(amount, currency = 'USD') {
+
+    const symbols = {
+
+        'USD': '$',
+
+        'KRW': '₩',
+
+        'EUR': '€',
+
+        'JPY': '¥'
+
+    };
+
+
+
+    const symbol = symbols[currency] || currency;
+
+
+
+    if (amount >= 1000000000) {
+
+        return symbol + (amount / 1000000000).toFixed(2) + 'B';
+
+    } else if (amount >= 1000000) {
+
+        return symbol + (amount / 1000000).toFixed(2) + 'M';
+
+    } else if (amount >= 1000) {
+
+        return symbol + (amount / 1000).toFixed(2) + 'K';
+
+    }
+
+    return symbol + amount.toFixed(2);
+
+}
+
+
+
+// === GENERATED CHART SCRIPTS START ===
+
+
+(function() {
+    const ctx = document.getElementById('auto_ev');
+    if (ctx) {
+        new Chart(ctx, {"type": "line", "data": {"labels": ["2024", "2025", "2026", "2027", "2028", "2029", "2030"], "datasets": [{"label": "EV 침투율(%)", "data": [14, 16, 19, 22, 25, 28, 30], "borderColor": "#e8a5a5", "backgroundColor": "rgba(232,165,165,0.2)", "borderWidth": 2}]}, "options": {"responsive": true, "plugins": {"legend": {"display": true}}}});
+    }
+})();
+
+
+(function() {
+    const ctx = document.getElementById('auto_mix');
+    if (ctx) {
+        new Chart(ctx, {"type": "bar", "data": {"labels": ["EV", "HEV/PHEV", "ICE"], "datasets": [{"label": "2024", "data": [14, 25, 61], "backgroundColor": "#e8a5a5"}, {"label": "2030", "data": [30, 28, 42], "backgroundColor": "#c89595"}]}, "options": {"responsive": true, "plugins": {"legend": {"display": true}}}});
+    }
+})();
+
+
+(function() {
+    const ctx = document.getElementById('auto_kr');
+    if (ctx) {
+        new Chart(ctx, {"type": "line", "data": {"labels": ["2024", "2025", "2026", "2027", "2028"], "datasets": [{"label": "완성차 수출(지수)", "data": [100, 104, 108, 111, 115], "borderColor": "#a5c5d5", "backgroundColor": "rgba(165,197,213,0.2)", "borderWidth": 2}, {"label": "부품 매출(지수)", "data": [100, 102, 106, 110, 114], "borderColor": "#d8a5a5", "backgroundColor": "rgba(216,165,165,0.2)", "borderWidth": 2}]}, "options": {"responsive": true, "plugins": {"legend": {"display": true}}}});
+    }
+})();
+
+
+(function() {
+    const ctx = document.getElementById('auto_regions');
+    if (ctx) {
+        new Chart(ctx, {"type": "line", "data": {"labels": ["2024", "2026", "2028", "2030"], "datasets": [{"label": "북미(%)", "data": [12, 17, 23, 28], "borderColor": "#e8a5a5", "backgroundColor": "rgba(232,165,165,0.2)", "borderWidth": 2}, {"label": "유럽(%)", "data": [18, 25, 33, 40], "borderColor": "#a5c5d5", "backgroundColor": "rgba(165,197,213,0.2)", "borderWidth": 2}, {"label": "중국(%)", "data": [30, 36, 42, 48], "borderColor": "#c89595", "backgroundColor": "rgba(200,149,149,0.2)", "borderWidth": 2}]}, "options": {"responsive": true, "plugins": {"legend": {"display": true}}}});
+    }
+})();
+
+
+(function() {
+    const ctx = document.getElementById('auto_oems');
+    if (ctx) {
+        new Chart(ctx, {"type": "bar", "data": {"labels": ["BYD", "Tesla", "Hyundai·Kia", "VW", "Toyota"], "datasets": [{"label": "전동화 지수(예시)", "data": [85, 80, 72, 65, 60], "backgroundColor": "#f0b6b6"}]}, "options": {"responsive": true, "plugins": {"legend": {"display": true}}}});
+    }
+})();
+
+
+(function() {
+    const ctx = document.getElementById('auto_supply_lead');
+    if (ctx) {
+        new Chart(ctx, {"type": "bar", "data": {"labels": ["Upstream", "Cell/Module", "Tier1", "OEM"], "datasets": [{"label": "리드타임(주)", "data": [16, 12, 10, 8], "backgroundColor": "#e8c5c5"}]}, "options": {"responsive": true}});
+    }
+})();
+
+
+(function() {
+    const ctx = document.getElementById('auto_fin');
+    if (ctx) {
+        new Chart(ctx, {"type": "bar", "data": {"labels": ["Year1", "Year2", "Year3"], "datasets": [{"label": "매출(억)", "data": [50, 120, 220], "backgroundColor": "#e8a5a5"}, {"label": "영업이익(억)", "data": [5, 18, 45], "backgroundColor": "#c89595"}]}, "options": {"responsive": true, "plugins": {"legend": {"display": true}}}});
+    }
+})();
+
+// === GENERATED CHART SCRIPTS END ===
+
+// Calendar functionality
+let calendarData = [];
+let currentCalendarDate = new Date();
+
+function parseDate(dateStr) {
+    if (!dateStr || dateStr.trim() === '') return null;
+    const parts = dateStr.split('/');
+    if (parts.length !== 2) return null;
+    const month = parseInt(parts[0], 10);
+    const day = parseInt(parts[1], 10);
+    const year = new Date().getFullYear();
+    return new Date(year, month - 1, day);
+}
+
+function extractCalendarDataFromTable() {
+    calendarData = [];
+    const segmentsSection = document.getElementById('segments');
+    if (!segmentsSection) return;
+    
+    const table = segmentsSection.querySelector('table tbody');
+    if (!table) return;
+    
+    const rows = table.querySelectorAll('tr');
+    rows.forEach((row, index) => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length >= 6) {
+            const detailCell = cells[2]; // 상세 내용
+            const completionDateCell = cells[5]; // 완료일
+            
+            // innerHTML과 textContent 모두 확인하여 정규화
+            const detailHTML = detailCell ? detailCell.innerHTML.trim() : '';
+            const detailText = detailCell ? detailCell.textContent.trim() : '';
+            const detail = normalizeText(detailHTML || detailText);
+            
+            const completionDate = completionDateCell ? completionDateCell.textContent.trim() : '';
+            
+            if (detail && completionDate) {
+                const date = parseDate(completionDate);
+                if (date) {
+                    calendarData.push({
+                        date: formatDateForCalendar(date),
+                        detail: detail,
+                        rowIndex: index // 테이블 행 인덱스 저장
+                    });
+                }
+            }
+        }
+    });
+}
+
+function normalizeText(text) {
+    // <br> 태그를 공백으로 변환하고, 연속된 공백을 하나로 만듦
+    return text.replace(/<br\s*\/?>/gi, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function updateTableCompletionDate(detail, newDate) {
+    const segmentsSection = document.getElementById('segments');
+    if (!segmentsSection) return false;
+    
+    const table = segmentsSection.querySelector('table tbody');
+    if (!table) return false;
+    
+    const rows = table.querySelectorAll('tr');
+    const normalizedDetail = normalizeText(detail);
+    
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length >= 6) {
+            const detailCell = cells[2]; // 상세 내용
+            const completionDateCell = cells[5]; // 완료일
+            
+            // innerHTML과 textContent 모두 확인
+            const rowDetailHTML = detailCell ? detailCell.innerHTML.trim() : '';
+            const rowDetailText = detailCell ? detailCell.textContent.trim() : '';
+            const normalizedRowDetail = normalizeText(rowDetailHTML || rowDetailText);
+            
+            // 상세 내용이 일치하는 행 찾기 (정규화된 텍스트로 비교)
+            if (normalizedRowDetail === normalizedDetail) {
+                const month = newDate.getMonth() + 1;
+                const day = newDate.getDate();
+                const newDateStr = `${month}/${day}`;
+                completionDateCell.textContent = newDateStr;
+                return true;
+            }
+        }
+    });
+    return false;
+}
+
+function formatDateForCalendar(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+// 한국 공휴일 목록 (2024년 기준, 필요시 확장 가능)
+function getHolidays(year) {
+    const holidays = {
+        '2024-01-01': '신정',
+        '2024-03-01': '삼일절',
+        '2024-05-05': '어린이날',
+        '2024-06-06': '현충일',
+        '2024-08-15': '광복절',
+        '2024-10-03': '개천절',
+        '2024-10-09': '한글날',
+        '2024-12-25': '크리스마스',
+        '2025-01-01': '신정',
+        '2025-03-01': '삼일절',
+        '2025-05-05': '어린이날',
+        '2025-06-06': '현충일',
+        '2025-08-15': '광복절',
+        '2025-10-03': '개천절',
+        '2025-10-09': '한글날',
+        '2025-12-25': '크리스마스'
+    };
+    return holidays;
+}
+
+function isHoliday(date) {
+    const dateStr = formatDateForCalendar(date);
+    const holidays = getHolidays(date.getFullYear());
+    return holidays[dateStr] || null;
+}
+
+function renderCalendar() {
+    const container = document.getElementById('calendar-grid');
+    const monthYearEl = document.getElementById('calendar-month-year');
+    
+    if (!container) return;
+    
+    const year = currentCalendarDate.getFullYear();
+    const month = currentCalendarDate.getMonth();
+    
+    // Update month/year header
+    const monthNames = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
+    monthYearEl.textContent = `${year}년 ${monthNames[month]}`;
+    
+    // Clear container
+    container.innerHTML = '';
+    
+    // Add day headers
+    const dayHeaders = ['일', '월', '화', '수', '목', '금', '토'];
+    dayHeaders.forEach((day, index) => {
+        const header = document.createElement('div');
+        header.className = 'calendar-day-header';
+        if (index === 0) header.classList.add('sunday');
+        if (index === 6) header.classList.add('saturday');
+        header.textContent = day;
+        container.appendChild(header);
+    });
+    
+    // Get first day of month and number of days
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDayOfWeek = firstDay.getDay();
+    
+    // Add empty cells for days before month starts
+    const prevMonth = month === 0 ? 11 : month - 1;
+    const prevYear = month === 0 ? year - 1 : year;
+    const prevMonthLastDay = new Date(prevYear, prevMonth + 1, 0).getDate();
+    
+    for (let i = 0; i < startingDayOfWeek; i++) {
+        const emptyDay = document.createElement('div');
+        emptyDay.className = 'calendar-day other-month';
+        const prevDay = prevMonthLastDay - startingDayOfWeek + i + 1;
+        const prevDate = new Date(prevYear, prevMonth, prevDay);
+        const prevDateStr = formatDateForCalendar(prevDate);
+        emptyDay.dataset.date = prevDateStr;
+        
+        // 이전 월 날짜에도 이벤트 표시
+        const dayNumber = document.createElement('div');
+        dayNumber.className = 'calendar-day-number';
+        dayNumber.textContent = prevDay;
+        emptyDay.appendChild(dayNumber);
+        
+        // 이전 월 날짜의 이벤트 표시
+        calendarData.forEach(event => {
+            if (event.date === prevDateStr) {
+                const eventEl = document.createElement('div');
+                eventEl.className = 'calendar-event';
+                eventEl.draggable = true;
+                eventEl.textContent = event.detail.length > 30 ? event.detail.substring(0, 30) + '...' : event.detail;
+                eventEl.title = event.detail;
+                eventEl.dataset.detail = event.detail;
+                eventEl.dataset.originalDate = event.date;
+                
+                eventEl.addEventListener('dragstart', handleDragStart);
+                eventEl.addEventListener('dragend', handleDragEnd);
+                
+                emptyDay.appendChild(eventEl);
+            }
+        });
+        
+        // 드롭 이벤트 핸들러 (다른 월도 드롭 가능하게)
+        emptyDay.addEventListener('dragover', handleDragOver);
+        emptyDay.addEventListener('drop', handleDrop);
+        emptyDay.addEventListener('dragleave', handleDragLeave);
+        
+        container.appendChild(emptyDay);
+    }
+    
+    // Add days of month
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dayEl = document.createElement('div');
+        const currentDate = new Date(year, month, day);
+        const dateStr = formatDateForCalendar(currentDate);
+        const dayOfWeek = currentDate.getDay();
+        
+        dayEl.className = 'calendar-day';
+        dayEl.dataset.date = dateStr;
+        
+        // 토요일/일요일 클래스 추가
+        if (dayOfWeek === 0) dayEl.classList.add('sunday');
+        if (dayOfWeek === 6) dayEl.classList.add('saturday');
+        
+        // 공휴일 체크
+        const holidayName = isHoliday(currentDate);
+        if (holidayName) {
+            dayEl.classList.add('holiday');
+        }
+        
+        if (currentDate.getTime() === today.getTime()) {
+            dayEl.classList.add('calendar-today');
+        }
+        
+        const dayNumber = document.createElement('div');
+        dayNumber.className = 'calendar-day-number';
+        dayNumber.textContent = day;
+        dayEl.appendChild(dayNumber);
+        
+        // 공휴일 라벨 추가
+        if (holidayName) {
+            const holidayLabel = document.createElement('div');
+            holidayLabel.className = 'calendar-holiday-label';
+            holidayLabel.textContent = holidayName;
+            dayEl.appendChild(holidayLabel);
+        }
+        
+        // Add events for this date
+        calendarData.forEach(event => {
+            if (event.date === dateStr) {
+                const eventEl = document.createElement('div');
+                eventEl.className = 'calendar-event';
+                eventEl.draggable = true;
+                eventEl.textContent = event.detail.length > 30 ? event.detail.substring(0, 30) + '...' : event.detail;
+                eventEl.title = event.detail;
+                eventEl.dataset.detail = event.detail;
+                eventEl.dataset.originalDate = event.date;
+                
+                // 드래그 이벤트 핸들러
+                eventEl.addEventListener('dragstart', handleDragStart);
+                eventEl.addEventListener('dragend', handleDragEnd);
+                
+                dayEl.appendChild(eventEl);
+            }
+        });
+        
+        // 드롭 이벤트 핸들러
+        dayEl.addEventListener('dragover', handleDragOver);
+        dayEl.addEventListener('drop', handleDrop);
+        dayEl.addEventListener('dragleave', handleDragLeave);
+        
+        container.appendChild(dayEl);
+    }
+    
+    // Add empty cells for days after month ends
+    const totalCells = container.children.length;
+    const totalDayCells = totalCells - 7; // 헤더 7칸 제외
+    const remainingCells = 35 - totalDayCells; // 5 weeks * 7 days = 35칸
+    const nextMonth = month === 11 ? 0 : month + 1;
+    const nextYear = month === 11 ? year + 1 : year;
+    
+    for (let i = 0; i < remainingCells; i++) {
+        const emptyDay = document.createElement('div');
+        emptyDay.className = 'calendar-day other-month';
+        const nextDay = i + 1;
+        const nextDate = new Date(nextYear, nextMonth, nextDay);
+        const nextDateStr = formatDateForCalendar(nextDate);
+        emptyDay.dataset.date = nextDateStr;
+        
+        // 다음 월 날짜에도 날짜 번호 표시
+        const dayNumber = document.createElement('div');
+        dayNumber.className = 'calendar-day-number';
+        dayNumber.textContent = nextDay;
+        emptyDay.appendChild(dayNumber);
+        
+        // 다음 월 날짜의 이벤트 표시
+        calendarData.forEach(event => {
+            if (event.date === nextDateStr) {
+                const eventEl = document.createElement('div');
+                eventEl.className = 'calendar-event';
+                eventEl.draggable = true;
+                eventEl.textContent = event.detail.length > 30 ? event.detail.substring(0, 30) + '...' : event.detail;
+                eventEl.title = event.detail;
+                eventEl.dataset.detail = event.detail;
+                eventEl.dataset.originalDate = event.date;
+                
+                eventEl.addEventListener('dragstart', handleDragStart);
+                eventEl.addEventListener('dragend', handleDragEnd);
+                
+                emptyDay.appendChild(eventEl);
+            }
+        });
+        
+        // 드롭 이벤트 핸들러 (다른 월도 드롭 가능하게)
+        emptyDay.addEventListener('dragover', handleDragOver);
+        emptyDay.addEventListener('drop', handleDrop);
+        emptyDay.addEventListener('dragleave', handleDragLeave);
+        
+        container.appendChild(emptyDay);
+    }
+}
+
+// Initialize calendar when segments section is shown
+const originalShowSection = showSection;
+showSection = function(sectionId) {
+    originalShowSection(sectionId);
+    if (sectionId === 'segments') {
+        setTimeout(() => {
+            extractCalendarDataFromTable();
+            renderCalendar();
+        }, 100);
+    }
+};
+
+// Drag and Drop handlers
+let draggedEvent = null;
+
+function handleDragStart(e) {
+    draggedEvent = {
+        detail: e.target.dataset.detail,
+        originalDate: e.target.dataset.originalDate,
+        element: e.target
+    };
+    e.target.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', e.target.outerHTML);
+}
+
+function handleDragEnd(e) {
+    e.target.classList.remove('dragging');
+    // 모든 날짜 셀에서 drag-over 클래스 제거
+    document.querySelectorAll('.calendar-day').forEach(day => {
+        day.classList.remove('drag-over');
+    });
+}
+
+function handleDragOver(e) {
+    if (e.preventDefault) {
+        e.preventDefault();
+    }
+    e.dataTransfer.dropEffect = 'move';
+    
+    // 드래그 중인 날짜 셀에 스타일 적용 (다른 월도 포함)
+    const dayEl = e.currentTarget;
+    if (dayEl.classList.contains('calendar-day')) {
+        dayEl.classList.add('drag-over');
+    }
+    return false;
+}
+
+function handleDragLeave(e) {
+    e.currentTarget.classList.remove('drag-over');
+}
+
+function handleDrop(e) {
+    if (e.stopPropagation) {
+        e.stopPropagation();
+    }
+    
+    e.preventDefault();
+    
+    const dayEl = e.currentTarget;
+    if (!dayEl.classList.contains('calendar-day')) {
+        return false;
+    }
+    
+    dayEl.classList.remove('drag-over');
+    
+    if (!draggedEvent) return false;
+    
+    // 날짜 추출 - dataset.date를 우선 사용, 없으면 현재 월 기준으로 계산
+    let newDate;
+    if (dayEl.dataset.date) {
+        // 다른 월의 날짜인 경우
+        const dateParts = dayEl.dataset.date.split('-');
+        newDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
+    } else {
+        // 현재 월의 날짜인 경우
+        const dayNumber = parseInt(dayEl.querySelector('.calendar-day-number')?.textContent);
+        if (!dayNumber) return false;
+        const year = currentCalendarDate.getFullYear();
+        const month = currentCalendarDate.getMonth();
+        newDate = new Date(year, month, dayNumber);
+    }
+    
+    const newDateStr = formatDateForCalendar(newDate);
+    
+    // calendarData 업데이트
+    const eventIndex = calendarData.findIndex(e => e.detail === draggedEvent.detail);
+    if (eventIndex !== -1) {
+        calendarData[eventIndex].date = newDateStr;
+    }
+    
+    // 테이블 업데이트
+    updateTableCompletionDate(draggedEvent.detail, newDate);
+    
+    // 다른 월로 이동한 경우 해당 월로 캘린더 이동
+    if (dayEl.classList.contains('other-month')) {
+        currentCalendarDate = new Date(newDate.getFullYear(), newDate.getMonth(), 1);
+    }
+    
+    // 캘린더 다시 렌더링
+    renderCalendar();
+    
+    draggedEvent = null;
+    return false;
+}
+
+// Calendar navigation
+document.addEventListener('DOMContentLoaded', function() {
+    const prevBtn = document.getElementById('prev-month');
+    const nextBtn = document.getElementById('next-month');
+    
+    if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+            currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
+            renderCalendar();
+        });
+    }
+    
+    if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+            currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
+            renderCalendar();
+        });
+    }
+    
+    // Initialize calendar if segments section is visible
+    if (document.getElementById('segments')?.classList.contains('active')) {
+        renderCalendar();
+    }
+});
+
+    </script>
+
+</body>
+
+</html>
+
+

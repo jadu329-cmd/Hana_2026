@@ -1,0 +1,3551 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>하나부 임원</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #fbfbfc;
+            --surface: #ffffff;
+            --text: #2f2f33;
+            --muted: #666a73;
+            --border: #e9ecf1;
+            --primary-50: #f7f5ff;
+            --primary-100: #efeaff;
+            --primary-200: #ded5ff;
+            --primary-300: #c4b6ff;
+            --primary-400: #a08dff;
+            --primary-500: #7b64ff;
+            --primary-600: #6a54f0;
+            --accent: #12b886;
+            --shadow: 0 8px 30px rgba(17, 17, 26, 0.05);
+        }
+
+        body {
+            font-family: 'Noto Sans KR', 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        header {
+            background: linear-gradient(180deg, var(--surface) 0%, #f7f8fb 100%);
+            padding: 56px 40px;
+            text-align: center;
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            margin-bottom: 36px;
+            border: 1px solid var(--border);
+        }
+
+        h1 {
+            color: var(--text);
+            font-size: 2.4em;
+            margin-bottom: 8px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .subtitle {
+            color: var(--muted);
+            font-size: 1.05em;
+            font-weight: 400;
+        }
+
+        .home-section {
+            background: var(--surface);
+            padding: 36px;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            margin-bottom: 28px;
+            border: 1px solid var(--border);
+        }
+
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .nav-button {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 22px;
+            border-radius: 12px;
+            cursor: move;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+            text-align: left;
+            position: relative;
+        }
+
+        .nav-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 24px rgba(17, 17, 26, 0.06);
+            border-color: var(--primary-200);
+        }
+
+        .nav-button.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+
+        .nav-button.drag-over {
+            border: 2px dashed var(--primary-500);
+            background: var(--primary-50);
+        }
+
+        .nav-button h3 {
+            color: var(--text);
+            margin-bottom: 6px;
+            font-size: 1.15em;
+        }
+
+        .nav-button p {
+            color: var(--muted);
+            font-size: 0.95em;
+        }
+
+        .content-section {
+            display: none;
+            background: var(--surface);
+            padding: 36px;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            margin-bottom: 28px;
+            border: 1px solid var(--border);
+        }
+
+        .content-section.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h2 {
+            color: var(--text);
+            font-size: 1.8em;
+            margin-bottom: 22px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--primary-100);
+        }
+
+        .back-button {
+            background: linear-gradient(180deg, var(--primary-500), var(--primary-600));
+            color: #fff;
+            border: none;
+            padding: 12px 22px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.95em;
+            margin-top: 28px;
+            transition: transform 0.15s ease, box-shadow 0.2s ease;
+            box-shadow: 0 8px 24px rgba(123, 100, 255, 0.25);
+            font-weight: 600;
+        }
+
+        .back-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 28px rgba(123, 100, 255, 0.28);
+        }
+
+        /* Calendar Styles */
+        #calendar-wrapper {
+            margin-top: 20px;
+            max-width: 100%;
+        }
+
+        #calendar-wrapper-home {
+            margin-top: 20px;
+            max-width: 100%;
+        }
+
+        #calendar-wrapper-home .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 10px 0;
+        }
+
+        #calendar-grid-home {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
+            background: var(--surface);
+            padding: 10px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            max-width: 100%;
+            overflow-x: auto;
+        }
+
+        #calendar-month-year-home {
+            margin: 0;
+            font-size: 1.3em;
+            color: var(--text);
+        }
+
+        /* 모바일 반응형 스타일 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px 10px;
+            }
+
+            header {
+                padding: 30px 20px;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .subtitle {
+                font-size: 0.95em;
+            }
+
+            .home-section {
+                padding: 20px;
+            }
+
+            .button-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .nav-button {
+                padding: 18px;
+            }
+
+            .nav-button h3 {
+                font-size: 1.05em;
+            }
+
+            .nav-button p {
+                font-size: 0.85em;
+            }
+
+            .calendar-header {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+
+            #calendar-month-year,
+            #calendar-month-year-home {
+                font-size: 1.1em;
+            }
+
+            .calendar-nav-btn {
+                padding: 6px 12px;
+                font-size: 1em;
+            }
+
+            #calendar-grid,
+            #calendar-grid-home {
+                gap: 4px;
+                padding: 8px;
+            }
+
+            .calendar-day {
+                padding: 4px;
+                font-size: 0.8em;
+            }
+
+            .calendar-day-number {
+                font-size: 0.85em;
+            }
+
+            .calendar-event {
+                font-size: 0.6em;
+                padding: 1px 2px;
+                margin: 0.5px 0;
+            }
+
+            .calendar-day-header {
+                padding: 8px 4px;
+                font-size: 0.8em;
+            }
+
+            table {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+
+            table thead,
+            table tbody {
+                display: table;
+                width: 100%;
+            }
+
+            .content-section {
+                padding: 20px;
+            }
+
+            .modal-content {
+                width: 95%;
+                max-width: 95%;
+                margin: 10px;
+                padding: 20px;
+            }
+
+            .btn-primary {
+                padding: 10px 16px;
+                font-size: 0.9em;
+            }
+
+            .back-button {
+                padding: 10px 16px;
+                font-size: 0.9em;
+            }
+
+            .form-group {
+                margin-bottom: 15px;
+            }
+
+            .form-group label {
+                font-size: 0.95em;
+            }
+
+            .form-group input,
+            .form-group textarea {
+                font-size: 0.95em;
+                padding: 10px;
+            }
+
+            .meeting-info-table {
+                font-size: 0.9em;
+            }
+
+            .meeting-info-table td {
+                padding: 8px 12px;
+            }
+
+            .participants-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+
+            .participant-item {
+                padding: 8px 12px;
+                font-size: 0.9em;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 15px 8px;
+            }
+
+            header {
+                padding: 25px 15px;
+            }
+
+            h1 {
+                font-size: 1.5em;
+            }
+
+            .home-section {
+                padding: 15px;
+            }
+
+            .calendar-day {
+                padding: 3px;
+                font-size: 0.75em;
+            }
+
+            .calendar-day-number {
+                font-size: 0.8em;
+            }
+
+            .calendar-event {
+                font-size: 0.55em;
+                padding: 1px;
+            }
+
+            .calendar-day-header {
+                padding: 6px 2px;
+                font-size: 0.75em;
+            }
+
+            .modal-content {
+                padding: 15px;
+            }
+
+            .btn-primary {
+                padding: 8px 12px;
+                font-size: 0.85em;
+            }
+
+            table th,
+            table td {
+                padding: 8px 6px;
+                font-size: 0.85em;
+            }
+
+            .participants-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 1400px) {
+            .calendar-day {
+                font-size: 0.85em;
+            }
+            .calendar-event {
+                font-size: 0.65em;
+            }
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 10px 0;
+        }
+
+        .calendar-nav-btn {
+            background: var(--primary-500);
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2em;
+            transition: background 0.2s ease;
+        }
+
+        .calendar-nav-btn:hover {
+            background: var(--primary-600);
+        }
+
+        #calendar-month-year {
+            margin: 0;
+            font-size: 1.3em;
+            color: var(--text);
+        }
+
+        #calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
+            background: var(--surface);
+            padding: 10px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            max-width: 100%;
+            overflow-x: auto;
+        }
+
+        .calendar-day-header {
+            text-align: center;
+            font-weight: 600;
+            padding: 10px;
+            color: var(--muted);
+            font-size: 0.9em;
+        }
+
+        .calendar-day-header.sunday {
+            color: #e74c3c;
+        }
+
+        .calendar-day-header.saturday {
+            color: #3498db;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1 / 1;
+            padding: 6px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--surface);
+            position: relative;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            font-size: 0.9em;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .calendar-day:hover {
+            background: var(--primary-50);
+        }
+
+        .calendar-day.other-month {
+            opacity: 0.3;
+            background: #f5f5f5;
+        }
+
+        .calendar-day-number {
+            font-weight: 600;
+            margin-bottom: 3px;
+            color: var(--text);
+            font-size: 0.95em;
+        }
+
+        .calendar-day.sunday .calendar-day-number {
+            color: #e74c3c;
+        }
+
+        .calendar-day.saturday .calendar-day-number {
+            color: #3498db;
+        }
+
+        .calendar-day.holiday {
+            background: #fff5f5;
+        }
+
+        .calendar-day.holiday .calendar-day-number {
+            color: #e74c3c;
+            font-weight: 700;
+        }
+
+        .calendar-holiday-label {
+            font-size: 0.65em;
+            color: #e74c3c;
+            font-weight: 600;
+            margin-top: 2px;
+        }
+
+        .calendar-event {
+            font-size: 0.68em;
+            padding: 2px 3px;
+            margin: 1px 0;
+            background: var(--primary-200);
+            color: #000;
+            border-radius: 3px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            cursor: move;
+            user-select: none;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+            font-weight: 500;
+            position: relative;
+            z-index: 1;
+            line-height: 1.3;
+        }
+
+        .calendar-event:hover {
+            opacity: 0.8;
+            z-index: 10;
+        }
+
+        .calendar-event.multi-day {
+            position: absolute;
+            left: 0;
+            right: 0;
+            margin: 2px 4px;
+            z-index: 2;
+        }
+
+        /* 색상별 이벤트 스타일 */
+        .event-yellow { background: #fff4cc; color: #000; }
+        .event-grey { background: #e8e8e8; color: #000; }
+        .event-blue { background: #cce5ff; color: #000; }
+        .event-darkblue { background: #4a86e8; color: #fff; font-weight: 600; }
+        .event-orange { background: #ffd9b3; color: #000; }
+        .event-pink { background: #ffccdd; color: #000; }
+        .event-pinkred { background: #ff99aa; color: #000; font-weight: 600; }
+        .event-green { background: #d4edda; color: #000; }
+        .event-brightyellow { background: #ffeb99; color: #000; font-weight: 600; }
+        
+        .calendar-day {
+            position: relative;
+        }
+        
+        .calendar-events-container {
+            position: relative;
+            min-height: 20px;
+        }
+
+        .calendar-event.dragging {
+            opacity: 0.5;
+            transform: scale(0.95);
+        }
+
+        .calendar-day.drag-over {
+            background: var(--primary-100);
+            border-color: var(--primary-400);
+            border-width: 2px;
+        }
+
+        .calendar-today {
+            background: var(--primary-100);
+            border-color: var(--primary-400);
+        }
+
+        /* Meeting Log Table */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 22px 0;
+            background: var(--surface);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+        }
+
+        th {
+            background: linear-gradient(180deg, var(--primary-50), var(--primary-100));
+            color: var(--text);
+            padding: 14px 16px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 14px 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        tr:hover {
+            background: #fbfbff;
+        }
+
+        /* Meeting Log Detail Styles */
+        .meeting-log-container {
+            background: var(--surface);
+            padding: 30px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+        }
+
+        .meeting-log-title {
+            text-align: center;
+            font-size: 1.8em;
+            font-weight: 700;
+            margin-bottom: 30px;
+            color: var(--text);
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--primary-200);
+        }
+
+        .meeting-info-table {
+            width: 100%;
+            margin-bottom: 30px;
+            border: 1px solid var(--border);
+        }
+
+        .meeting-info-table td {
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+        }
+
+        .meeting-info-table .label {
+            background: var(--primary-50);
+            font-weight: 600;
+            width: 150px;
+        }
+
+        .meeting-section {
+            margin-bottom: 30px;
+        }
+
+        .meeting-section-title {
+            font-size: 1.2em;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: var(--text);
+            padding: 10px;
+            background: var(--primary-50);
+            border-left: 4px solid var(--primary-500);
+        }
+
+        .meeting-content {
+            padding: 15px;
+            background: #fafbfc;
+            border-radius: 8px;
+            white-space: pre-wrap;
+            line-height: 1.8;
+        }
+
+        .participants-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .participant-item {
+            padding: 10px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .checkbox-item:hover {
+            background: var(--primary-50);
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            margin-right: 8px;
+            cursor: pointer;
+            width: 18px;
+            height: 18px;
+        }
+
+        .checkbox-item label {
+            cursor: pointer;
+            user-select: none;
+            margin: 0;
+            flex: 1;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal.active {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: var(--surface);
+            padding: 30px;
+            border-radius: 16px;
+            max-width: 800px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--primary-100);
+        }
+
+        .modal-header h3 {
+            font-size: 1.5em;
+            color: var(--text);
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 2em;
+            color: var(--muted);
+            cursor: pointer;
+            line-height: 1;
+            padding: 0;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            transition: background 0.2s ease;
+        }
+
+        .close-btn:hover {
+            background: var(--border);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 1em;
+        }
+
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .btn-primary {
+            background: var(--primary-500);
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-600);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>하나부 임원</h1>
+            <p class="subtitle">2026년 청년회 운영 보고서</p>
+        </header>
+
+        <div id="home" class="home-section">
+            <h2>📋 목차</h2>
+            <div class="button-grid" id="nav-button-grid">
+                <!-- 목차 버튼들이 여기에 동적으로 생성됩니다 -->
+                </div>
+
+            <!-- 부서 월간 일정 캘린더 -->
+            <div style="margin-top: 50px;">
+                <h2 style="margin-bottom: 20px;">📅 부서 월간 일정</h2>
+                <div style="margin-bottom: 20px;">
+                    <input type="file" id="excel-upload-home" accept=".xlsx,.xls" style="display: none;" onchange="handleExcelUpload(event)">
+                    <button class="btn-primary" onclick="document.getElementById('excel-upload-home').click()">📁 엑셀 파일 업로드</button>
+                    <span style="margin-left: 15px; color: var(--muted); font-size: 0.9em;">* Excel 파일로 일정을 업데이트할 수 있습니다</span>
+                </div>
+                <div id="calendar-wrapper-home">
+                    <div class="calendar-header">
+                        <button id="prev-month-home" class="calendar-nav-btn">←</button>
+                        <h4 id="calendar-month-year-home"></h4>
+                        <button id="next-month-home" class="calendar-nav-btn">→</button>
+                </div>
+                    <div id="calendar-grid-home"></div>
+                </div>
+                </div>
+                </div>
+
+        <!-- 부서 월간 일정 섹션 -->
+        <div id="schedule" class="content-section">
+            <h2>부서 월간 일정</h2>
+            <div style="margin-bottom: 20px;">
+                <input type="file" id="excel-upload" accept=".xlsx,.xls" style="display: none;" onchange="handleExcelUpload(event)">
+                <button class="btn-primary" onclick="document.getElementById('excel-upload').click()">📁 엑셀 파일 업로드</button>
+                <span style="margin-left: 15px; color: var(--muted); font-size: 0.9em;">* Excel 파일로 일정을 업데이트할 수 있습니다</span>
+            </div>
+            <div id="calendar-wrapper">
+                <div class="calendar-header">
+                    <button id="prev-month" class="calendar-nav-btn">←</button>
+                    <h4 id="calendar-month-year"></h4>
+                    <button id="next-month" class="calendar-nav-btn">→</button>
+                </div>
+                <div id="calendar-grid"></div>
+            </div>
+            <button class="back-button" onclick="showHome()">← 목차로 돌아가기</button>
+        </div>
+
+        <!-- 회의록 섹션 -->
+        <div id="meeting" class="content-section">
+            <h2>회의록</h2>
+            <button class="btn-primary" onclick="openMeetingModal()" style="margin-bottom: 20px;">+ 새 회의록 작성</button>
+            <table id="meeting-table">
+                <thead>
+                    <tr>
+                        <th>회의일자</th>
+                        <th>회의 결과</th>
+                        <th>작업</th>
+                    </tr>
+                </thead>
+                <tbody id="meeting-tbody">
+                    <!-- 회의록 데이터가 여기에 추가됩니다 -->
+                </tbody>
+            </table>
+            <button class="back-button" onclick="showHome()">← 목차로 돌아가기</button>
+        </div>
+
+        <!-- 야외교제 섹션 -->
+        <div id="outdoor" class="content-section">
+            <h2>야외교제</h2>
+            <p style="color: var(--muted); margin: 20px 0;">야외교제 내용을 추가해주세요.</p>
+            <button class="back-button" onclick="showHome()">← 목차로 돌아가기</button>
+        </div>
+
+        <!-- 회장단 요청사항 섹션 -->
+        <div id="requests" class="content-section">
+            <h2>회장단 요청사항</h2>
+            <table id="requests-main-table" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr>
+                        <th style="padding: 12px; background: var(--primary-50); border: 1px solid var(--border); text-align: left;">회의일자</th>
+                        <th style="padding: 12px; background: var(--primary-50); border: 1px solid var(--border); text-align: left;">회장단 요청사항</th>
+                        <th style="padding: 12px; background: var(--primary-50); border: 1px solid var(--border); text-align: left;">교제 결과</th>
+                    </tr>
+                </thead>
+                <tbody id="requests-main-tbody">
+                    <!-- 요청사항 데이터가 여기에 추가됩니다 -->
+                </tbody>
+            </table>
+            <button class="back-button" onclick="showHome()">← 목차로 돌아가기</button>
+        </div>
+
+        <!-- 식사 준비 섹션 -->
+        <div id="meal" class="content-section">
+            <h2>식사 준비</h2>
+            <button class="btn-primary" onclick="openMealModal()" style="margin-bottom: 20px;">+ 새 식사 준비 추가</button>
+            <table id="meal-table" style="width: 100%;">
+                <thead>
+                    <tr>
+                        <th>날짜</th>
+                        <th>메뉴</th>
+                        <th>장보기 담당</th>
+                        <th>작업</th>
+                    </tr>
+                </thead>
+                <tbody id="meal-tbody">
+                    <!-- 식사 준비 데이터가 여기에 추가됩니다 -->
+                </tbody>
+            </table>
+            <button class="back-button" onclick="showHome()">← 목차로 돌아가기</button>
+        </div>
+
+        <!-- 부서교제 섹션 -->
+        <div id="fellowship" class="content-section">
+            <h2>부서교제</h2>
+            <button class="btn-primary" onclick="openFellowshipModal()" style="margin-bottom: 20px;">+ 새 부서교제 추가</button>
+            <table id="fellowship-table" style="width: 100%;">
+                <thead>
+                    <tr>
+                        <th>날짜</th>
+                        <th>교제 내용</th>
+                        <th>작업</th>
+                    </tr>
+                </thead>
+                <tbody id="fellowship-tbody">
+                    <!-- 부서교제 데이터가 여기에 추가됩니다 -->
+                </tbody>
+            </table>
+            <button class="back-button" onclick="showHome()">← 목차로 돌아가기</button>
+        </div>
+
+        <!-- 심방리스트 섹션 -->
+        <div id="visit" class="content-section">
+            <h2>심방리스트</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 30px;">
+                <!-- 형제 섹션 -->
+                <div>
+                    <h3 style="margin-bottom: 20px; color: var(--text); font-size: 1.3em; padding-bottom: 10px; border-bottom: 2px solid var(--primary-200);">형제</h3>
+                    <table id="brothers-table" style="width: 100%;">
+                        <thead>
+                            <tr>
+                                <th style="width: 40%;">이름</th>
+                                <th style="width: 35%;">심방일자</th>
+                                <th style="width: 25%;">회장단 참석</th>
+                            </tr>
+                        </thead>
+                        <tbody id="brothers-tbody">
+                            <!-- 형제 명단이 여기에 추가됩니다 -->
+                        </tbody>
+                    </table>
+                </div>
+                <!-- 자매 섹션 -->
+                <div>
+                    <h3 style="margin-bottom: 20px; color: var(--text); font-size: 1.3em; padding-bottom: 10px; border-bottom: 2px solid var(--primary-200);">자매</h3>
+                    <table id="sisters-table" style="width: 100%;">
+                        <thead>
+                            <tr>
+                                <th style="width: 40%;">이름</th>
+                                <th style="width: 35%;">심방일자</th>
+                                <th style="width: 25%;">회장단 참석</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sisters-tbody">
+                            <!-- 자매 명단이 여기에 추가됩니다 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <button class="back-button" onclick="showHome()">← 목차로 돌아가기</button>
+        </div>
+    </div>
+
+    <!-- 회의록 작성/수정 모달 -->
+    <div id="meeting-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="meeting-modal-title">회의록 작성</h3>
+                <button class="close-btn" onclick="closeMeetingModal()">&times;</button>
+            </div>
+            <form id="meeting-form" onsubmit="saveMeetingLog(event)">
+                <input type="hidden" id="meeting-edit-id">
+                <div class="form-group">
+                    <label>회의일자</label>
+                    <input type="date" id="meeting-date" required>
+                </div>
+                <div class="form-group">
+                    <label>회의 전 공유사항</label>
+                    <textarea id="meeting-pre-share" rows="6" placeholder="회의 전 공유할 사항을 입력하세요"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>회의 결과</label>
+                    <textarea id="meeting-result" rows="8" required placeholder="회의 결과 및 결정사항을 입력하세요"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>회의 참가자</label>
+                    <div id="participants-checklist" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                        <!-- 체크리스트가 여기에 생성됩니다 -->
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>회장단 요청사항</label>
+                    <div id="requests-list" style="background: #f8f9fa; padding: 15px; border-radius: 8px; max-height: 400px; overflow-y: auto;">
+                        <button type="button" class="btn-primary" onclick="addRequestRow()" style="margin-bottom: 10px; padding: 8px 15px; font-size: 0.9em;">+ 요청사항 추가</button>
+                        <table id="requests-table" style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr>
+                                    <th style="padding: 10px; background: var(--primary-50); border: 1px solid var(--border); text-align: left;">회장단 요청사항</th>
+                                    <th style="padding: 10px; background: var(--primary-50); border: 1px solid var(--border); text-align: left;">교제 결과</th>
+                                    <th style="padding: 10px; background: var(--primary-50); border: 1px solid var(--border); text-align: center; width: 80px;">작업</th>
+                                </tr>
+                            </thead>
+                            <tbody id="requests-tbody">
+                                <!-- 요청사항 행이 여기에 추가됩니다 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary">저장</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 회의록 상세보기 모달 -->
+    <div id="meeting-detail-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>회의록 상세</h3>
+                <button class="close-btn" onclick="closeMeetingDetailModal()">&times;</button>
+            </div>
+            <div id="meeting-detail-content"></div>
+            <div style="margin-top: 20px; text-align: right;">
+                <button class="btn-primary" onclick="editMeetingFromDetail()" style="margin-right: 10px;">수정</button>
+                <button class="btn-primary" onclick="closeMeetingDetailModal()" style="background: var(--border); color: var(--text);">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 식사 준비 작성/수정 모달 -->
+    <div id="meal-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="meal-modal-title">식사 준비 추가</h3>
+                <button class="close-btn" onclick="closeMealModal()">&times;</button>
+            </div>
+            <form id="meal-form" onsubmit="saveMeal(event)">
+                <input type="hidden" id="meal-edit-id">
+                <div class="form-group">
+                    <label>날짜</label>
+                    <input type="text" id="meal-date" required placeholder="예: 1/17" pattern="\d{1,2}/\d{1,2}">
+                    <small style="color: var(--muted);">형식: 월/일 (예: 1/17, 12/25)</small>
+                </div>
+                <div class="form-group">
+                    <label>메뉴</label>
+                    <input type="text" id="meal-menu" required placeholder="예: 된장찌개">
+                </div>
+                <div class="form-group">
+                    <label>장보기 담당</label>
+                    <input type="text" id="meal-assignee" placeholder="예: 박지훈">
+                </div>
+                <button type="submit" class="btn-primary">저장</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 부서교제 작성/수정 모달 -->
+    <div id="fellowship-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="fellowship-modal-title">부서교제 추가</h3>
+                <button class="close-btn" onclick="closeFellowshipModal()">&times;</button>
+            </div>
+            <form id="fellowship-form" onsubmit="saveFellowship(event)">
+                <input type="hidden" id="fellowship-edit-id">
+                <div class="form-group">
+                    <label>날짜</label>
+                    <input type="text" id="fellowship-date" required placeholder="예: 1/17" pattern="\d{1,2}/\d{1,2}">
+                    <small style="color: var(--muted);">형식: 월/일 (예: 1/17, 12/25)</small>
+                </div>
+                <div class="form-group">
+                    <label>교제 내용</label>
+                    <input type="text" id="fellowship-content" required placeholder="예: 자기소개">
+                </div>
+                <div class="form-group">
+                    <label style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>준비 사항</span>
+                        <button type="button" class="btn-primary" onclick="addPreparationItem()" style="padding: 6px 12px; font-size: 0.9em;">+ 추가</button>
+                    </label>
+                    <div id="preparations-list" style="background: #f8f9fa; padding: 15px; border-radius: 8px; max-height: 300px; overflow-y: auto;">
+                        <!-- 준비 사항 목록이 여기에 추가됩니다 -->
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary">저장</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 부서교제 상세보기 모달 -->
+    <div id="fellowship-detail-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>부서교제 상세</h3>
+                <button class="close-btn" onclick="closeFellowshipDetailModal()">&times;</button>
+            </div>
+            <div id="fellowship-detail-content"></div>
+            <div style="margin-top: 20px; text-align: right;">
+                <button class="btn-primary" onclick="editFellowshipFromDetail()" style="margin-right: 10px;">수정</button>
+                <button class="btn-primary" onclick="closeFellowshipDetailModal()" style="background: var(--border); color: var(--text);">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // Firebase 설정
+        // ============================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyALDK7sAJx32ZJt75osEAPIGXmmmH_MI2c",
+            authDomain: "team-hana.firebaseapp.com",
+            projectId: "team-hana",
+            storageBucket: "team-hana.firebasestorage.app",
+            messagingSenderId: "1088617617940",
+            appId: "1:1088617617940:web:29a69f3b78b89e9ad4a501"
+        };
+        
+        // Firebase 초기화
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        
+        // Firebase 사용 여부
+        const USE_FIREBASE = true;
+        
+        // Firebase 데이터 저장 함수
+        async function saveToFirebase(collection, data) {
+            if (!USE_FIREBASE || !db) {
+                // Firebase 미사용 시 localStorage에 저장
+                localStorage.setItem(collection, JSON.stringify(data));
+                return;
+            }
+            
+            try {
+                await db.collection('appData').doc(collection).set({
+                    data: data,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            } catch (error) {
+                console.error('Firebase 저장 오류:', error);
+                // 오류 시 localStorage에 백업 저장
+                localStorage.setItem(collection, JSON.stringify(data));
+            }
+        }
+        
+        // Firebase 데이터 로드 함수
+        async function loadFromFirebase(collection, defaultValue = null) {
+            if (!USE_FIREBASE || !db) {
+                // Firebase 미사용 시 localStorage에서 로드
+                const stored = localStorage.getItem(collection);
+                return stored ? JSON.parse(stored) : defaultValue;
+            }
+            
+            try {
+                const doc = await db.collection('appData').doc(collection).get();
+                if (doc.exists) {
+                    return doc.data().data || defaultValue;
+                }
+                return defaultValue;
+            } catch (error) {
+                console.error('Firebase 로드 오류:', error);
+                // 오류 시 localStorage에서 로드
+                const stored = localStorage.getItem(collection);
+                return stored ? JSON.parse(stored) : defaultValue;
+            }
+        }
+        
+        // Navigation functions
+        function showSection(sectionId) {
+            document.querySelectorAll(".content-section").forEach(section => {
+                section.classList.remove("active");
+            });
+            document.getElementById("home").style.display = "none";
+            document.getElementById(sectionId).classList.add("active");
+            window.scrollTo(0, 0);
+
+            if (sectionId === 'schedule') {
+                setTimeout(() => {
+                    renderCalendar();
+                }, 100);
+            }
+            if (sectionId === 'visit') {
+                setTimeout(() => {
+                    renderVisitList();
+                }, 100);
+            }
+            if (sectionId === 'fellowship') {
+                setTimeout(() => {
+                    renderFellowshipTable();
+                }, 100);
+            }
+            if (sectionId === 'requests') {
+                setTimeout(() => {
+                    renderRequestsTable();
+                }, 100);
+            }
+            if (sectionId === 'meal') {
+                setTimeout(() => {
+                    renderMealTable();
+                }, 100);
+            }
+        }
+
+        function showHome() {
+            document.querySelectorAll(".content-section").forEach(section => {
+                section.classList.remove("active");
+            });
+            document.getElementById("home").style.display = "block";
+            window.scrollTo(0, 0);
+        }
+
+        // Calendar functionality
+        let currentCalendarDate = new Date();
+        // Firebase 또는 localStorage에서 데이터 로드 (초기화는 async로 처리)
+        let calendarEvents = [];
+
+        function getHolidays(year) {
+            const holidays = {};
+            
+            if (year === 2025) {
+                // 2025년 공휴일
+                holidays['2025-01-01'] = '신정';
+                holidays['2025-01-28'] = '설날';
+                holidays['2025-01-29'] = '설날';
+                holidays['2025-01-30'] = '설날';
+                holidays['2025-03-01'] = '삼일절';
+                holidays['2025-05-05'] = '어린이날';
+                holidays['2025-05-06'] = '어린이날 대체공휴일';
+                holidays['2025-05-15'] = '석가탄신일';
+                holidays['2025-06-06'] = '현충일';
+                holidays['2025-08-15'] = '광복절';
+                holidays['2025-09-06'] = '추석';
+                holidays['2025-09-07'] = '추석';
+                holidays['2025-09-08'] = '추석';
+                holidays['2025-09-09'] = '추석 대체공휴일';
+                holidays['2025-10-03'] = '개천절';
+                holidays['2025-10-09'] = '한글날';
+                holidays['2025-12-25'] = '크리스마스';
+            } else if (year === 2026) {
+                // 2026년 공휴일
+                holidays['2026-01-01'] = '신정';
+                holidays['2026-02-16'] = '설날';
+                holidays['2026-02-17'] = '설날';
+                holidays['2026-02-18'] = '설날';
+                holidays['2026-03-01'] = '삼일절';
+                holidays['2026-05-05'] = '어린이날';
+                holidays['2026-05-06'] = '어린이날 대체공휴일';
+                holidays['2026-05-24'] = '석가탄신일';
+                holidays['2026-06-06'] = '현충일';
+                holidays['2026-08-15'] = '광복절';
+                holidays['2026-09-24'] = '추석';
+                holidays['2026-09-25'] = '추석';
+                holidays['2026-09-26'] = '추석';
+                holidays['2026-09-27'] = '추석 대체공휴일';
+                holidays['2026-10-03'] = '개천절';
+                holidays['2026-10-09'] = '한글날';
+                holidays['2026-12-25'] = '크리스마스';
+            }
+            
+            return holidays;
+        }
+
+        function isHoliday(date) {
+            const dateStr = formatDateForCalendar(date);
+            const holidays = getHolidays(date.getFullYear());
+            return holidays[dateStr] || null;
+        }
+
+        function formatDateForCalendar(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function renderCalendar() {
+            // 홈 화면과 섹션 화면 모두 렌더링
+            const container = document.getElementById('calendar-grid');
+            const monthYearEl = document.getElementById('calendar-month-year');
+            const containerHome = document.getElementById('calendar-grid-home');
+            const monthYearElHome = document.getElementById('calendar-month-year-home');
+            
+            // 홈 화면 캘린더 렌더링
+            if (containerHome && monthYearElHome) {
+                renderCalendarToContainer(containerHome, monthYearElHome);
+            }
+            
+            // 섹션 화면 캘린더 렌더링 (있는 경우)
+            if (container && monthYearEl) {
+                renderCalendarToContainer(container, monthYearEl);
+            }
+        }
+
+        function renderCalendarToContainer(container, monthYearEl) {
+            if (!container || !monthYearEl) return;
+            
+            const year = currentCalendarDate.getFullYear();
+            const month = currentCalendarDate.getMonth();
+            
+            const monthNames = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
+            monthYearEl.textContent = `${year}년 ${monthNames[month]}`;
+            
+            container.innerHTML = '';
+            
+            // Add day headers
+            const dayHeaders = ['일', '월', '화', '수', '목', '금', '토'];
+            dayHeaders.forEach((day, index) => {
+                const header = document.createElement('div');
+                header.className = 'calendar-day-header';
+                if (index === 0) header.classList.add('sunday');
+                if (index === 6) header.classList.add('saturday');
+                header.textContent = day;
+                container.appendChild(header);
+            });
+            
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const daysInMonth = lastDay.getDate();
+            const startingDayOfWeek = firstDay.getDay();
+            
+            // Previous month days
+            const prevMonth = month === 0 ? 11 : month - 1;
+            const prevYear = month === 0 ? year - 1 : year;
+            const prevMonthLastDay = new Date(prevYear, prevMonth + 1, 0).getDate();
+            
+            for (let i = 0; i < startingDayOfWeek; i++) {
+                const dayEl = document.createElement('div');
+                dayEl.className = 'calendar-day other-month';
+                const prevDay = prevMonthLastDay - startingDayOfWeek + i + 1;
+                const prevDate = new Date(prevYear, prevMonth, prevDay);
+                const prevDateStr = formatDateForCalendar(prevDate);
+                dayEl.dataset.date = prevDateStr;
+                
+                const dayNumber = document.createElement('div');
+                dayNumber.className = 'calendar-day-number';
+                dayNumber.textContent = prevDay;
+                dayEl.appendChild(dayNumber);
+                
+                renderEventsForDay(dayEl, prevDateStr);
+                addDragDropHandlers(dayEl);
+                
+                container.appendChild(dayEl);
+            }
+            
+            // Current month days
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayEl = document.createElement('div');
+                const currentDate = new Date(year, month, day);
+                const dateStr = formatDateForCalendar(currentDate);
+                const dayOfWeek = currentDate.getDay();
+                
+                dayEl.className = 'calendar-day';
+                dayEl.dataset.date = dateStr;
+                
+                if (dayOfWeek === 0) dayEl.classList.add('sunday');
+                if (dayOfWeek === 6) dayEl.classList.add('saturday');
+                
+                const holidayName = isHoliday(currentDate);
+                if (holidayName) {
+                    dayEl.classList.add('holiday');
+                }
+                
+                if (currentDate.getTime() === today.getTime()) {
+                    dayEl.classList.add('calendar-today');
+                }
+                
+                const dayNumber = document.createElement('div');
+                dayNumber.className = 'calendar-day-number';
+                dayNumber.textContent = day;
+                dayEl.appendChild(dayNumber);
+                
+                if (holidayName) {
+                    const holidayLabel = document.createElement('div');
+                    holidayLabel.className = 'calendar-holiday-label';
+                    holidayLabel.textContent = holidayName;
+                    dayEl.appendChild(holidayLabel);
+                }
+                
+                renderEventsForDay(dayEl, dateStr);
+                
+                // 날짜 클릭 시 일정 추가
+                dayEl.addEventListener('click', (e) => {
+                    if (e.target === dayEl || e.target === dayNumber) {
+                        addEventToDate(dateStr);
+                    }
+                });
+                
+                addDragDropHandlers(dayEl);
+                
+                container.appendChild(dayEl);
+            }
+            
+            // Next month days
+            const totalCells = container.children.length;
+            const totalDayCells = totalCells - 7;
+            const remainingCells = 35 - totalDayCells;
+            const nextMonth = month === 11 ? 0 : month + 1;
+            const nextYear = month === 11 ? year + 1 : year;
+            
+            for (let i = 0; i < remainingCells; i++) {
+                const dayEl = document.createElement('div');
+                dayEl.className = 'calendar-day other-month';
+                const nextDay = i + 1;
+                const nextDate = new Date(nextYear, nextMonth, nextDay);
+                const nextDateStr = formatDateForCalendar(nextDate);
+                dayEl.dataset.date = nextDateStr;
+                
+                const dayNumber = document.createElement('div');
+                dayNumber.className = 'calendar-day-number';
+                dayNumber.textContent = nextDay;
+                dayEl.appendChild(dayNumber);
+                
+                renderEventsForDay(dayEl, nextDateStr);
+                addDragDropHandlers(dayEl);
+                
+                container.appendChild(dayEl);
+            }
+        }
+
+        function isDateInRange(checkDate, startDate, endDate) {
+            const check = new Date(checkDate);
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            check.setHours(0, 0, 0, 0);
+            start.setHours(0, 0, 0, 0);
+            end.setHours(0, 0, 0, 0);
+            return check >= start && check <= end;
+        }
+
+        function renderEventsForDay(dayEl, dateStr) {
+            // 해당 날짜에 속한 모든 이벤트 찾기 (시작일이거나 범위 내 날짜)
+            const events = calendarEvents.filter(e => {
+                if (!e.endDate || e.endDate === e.date) {
+                    return e.date === dateStr;
+                }
+                return isDateInRange(dateStr, e.date, e.endDate);
+            });
+            
+            events.forEach(event => {
+                const eventEl = document.createElement('div');
+                eventEl.className = 'calendar-event';
+                
+                // 색상 클래스 추가
+                if (event.color) {
+                    eventEl.classList.add(`event-${event.color}`);
+                }
+                
+                // 모든 날짜에 제목 표시
+                eventEl.textContent = event.title.length > 20 ? event.title.substring(0, 20) + '...' : event.title;
+                
+                eventEl.draggable = true;
+                eventEl.title = event.title;
+                eventEl.dataset.eventId = event.id;
+                eventEl.dataset.date = dateStr;
+                
+                eventEl.addEventListener('dragstart', handleDragStart);
+                eventEl.addEventListener('dragend', handleDragEnd);
+                eventEl.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    // 회의록인 경우 회의록 상세보기로 이동
+                    if (event.meetingId) {
+                        const meeting = meetingLogs.find(m => m.id === event.meetingId);
+                        if (meeting) {
+                            showMeetingDetail(meeting);
+                        }
+                    }
+                    // 식사 준비인 경우 식사 준비 섹션으로 이동
+                    else if (event.mealId) {
+                        showSection('meal');
+                    }
+                    // 부서교제인 경우 부서교제 섹션으로 이동
+                    else if (event.fellowshipId) {
+                        showSection('fellowship');
+                        setTimeout(() => {
+                            const fellowship = fellowshipData.find(f => f.id === event.fellowshipId);
+                            if (fellowship) {
+                                showFellowshipDetail(fellowship);
+                            }
+                        }, 200);
+                    } else {
+                    editEvent(event);
+                    }
+                });
+                eventEl.addEventListener('dblclick', (e) => {
+                    e.stopPropagation();
+                    if (confirm(`"${event.title}" 일정을 삭제하시겠습니까?`)) {
+                        deleteEvent(event.id);
+                    }
+                });
+                eventEl.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const action = confirm(`"${event.title}" 일정을 삭제하시겠습니까?\n확인: 삭제\n취소: 수정`);
+                    if (action) {
+                        deleteEvent(event.id);
+                    } else {
+                        editEvent(event);
+                    }
+                });
+                
+                dayEl.appendChild(eventEl);
+            });
+        }
+
+        function addDragDropHandlers(dayEl) {
+            dayEl.addEventListener('dragover', handleDragOver);
+            dayEl.addEventListener('drop', handleDrop);
+            dayEl.addEventListener('dragleave', handleDragLeave);
+        }
+
+        let draggedEvent = null;
+
+        function handleDragStart(e) {
+            draggedEvent = {
+                id: e.target.dataset.eventId,
+                date: e.target.dataset.date
+            };
+            e.target.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+            document.querySelectorAll('.calendar-day').forEach(day => {
+                day.classList.remove('drag-over');
+            });
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            const dayEl = e.currentTarget;
+            if (dayEl.classList.contains('calendar-day')) {
+                dayEl.classList.add('drag-over');
+            }
+            return false;
+        }
+
+        function handleDragLeave(e) {
+            e.currentTarget.classList.remove('drag-over');
+        }
+
+        function handleDrop(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            
+            const dayEl = e.currentTarget;
+            if (!dayEl.classList.contains('calendar-day')) {
+                return false;
+            }
+            
+            dayEl.classList.remove('drag-over');
+            
+            if (!draggedEvent) return false;
+            
+            const newDateStr = dayEl.dataset.date;
+            
+            // Update event date
+            const eventIndex = calendarEvents.findIndex(ev => ev.id === draggedEvent.id);
+            if (eventIndex !== -1) {
+                const event = calendarEvents[eventIndex];
+                calendarEvents[eventIndex].date = newDateStr;
+                calendarEvents[eventIndex].endDate = newDateStr;
+                saveToFirebase('youthCalendarEvents', calendarEvents);
+                
+                // 식사 준비인지 확인
+                if (event.mealId) {
+                    // 전역 변수에서 최신 식사 준비 데이터 사용
+                    const mealIndex = mealData.findIndex(m => m.id === event.mealId);
+                    
+                    if (mealIndex !== -1) {
+                        // 날짜를 MM/DD 형식으로 변환
+                        if (newDateStr) {
+                            const dateParts = newDateStr.split('-');
+                            const month = parseInt(dateParts[1]);
+                            const day = parseInt(dateParts[2]);
+                            const formattedDate = `${month}/${day}`;
+                            
+                            // 식사 준비 데이터 업데이트
+                            currentMealData[mealIndex].date = newDateStr;
+                            currentMealData[mealIndex].dateStr = formattedDate;
+                            
+                            // 전역 변수 업데이트
+                            mealData[mealIndex].date = newDateStr;
+                            mealData[mealIndex].dateStr = formattedDate;
+                            
+                            // Firebase에 저장
+                            saveToFirebase('mealData', mealData);
+                            
+                            // 식사 준비 테이블 UI 업데이트
+                            renderMealTable();
+                        }
+                    }
+                }
+                // 부서교제인지 확인
+                else if (event.fellowshipId) {
+                    // 전역 변수에서 최신 부서교제 데이터 사용
+                    const fellowshipIndex = fellowshipData.findIndex(f => f.id === event.fellowshipId);
+                    
+                    if (fellowshipIndex !== -1) {
+                        // 날짜를 MM/DD 형식으로 변환
+                        if (newDateStr) {
+                            const dateParts = newDateStr.split('-');
+                            const month = parseInt(dateParts[1]);
+                            const day = parseInt(dateParts[2]);
+                            const formattedDate = `${month}/${day}`;
+                            
+                            // 부서교제 데이터 업데이트
+                            fellowshipData[fellowshipIndex].date = newDateStr;
+                            fellowshipData[fellowshipIndex].dateStr = formattedDate;
+                            
+                            // Firebase에 저장
+                            saveToFirebase('fellowshipData', fellowshipData);
+                            
+                            // 부서교제 테이블 UI 업데이트 (섹션이 열려있으면 즉시 업데이트)
+                            renderFellowshipTable();
+                        }
+                    }
+                }
+                // 심방 일정인지 확인 (이름 + b/s + 심방 형식)
+                else {
+                    const visitMatch = event.title.match(/^(.+?)([bs]) 심방$/);
+                    if (visitMatch) {
+                        const name = visitMatch[1];
+                        const type = visitMatch[2];
+                        
+                        // 날짜를 MM/DD 형식으로 변환
+                        if (newDateStr) {
+                            const dateParts = newDateStr.split('-');
+                            const month = parseInt(dateParts[1]);
+                            const day = parseInt(dateParts[2]);
+                            const formattedDate = `${month}/${day}`;
+                            
+                            // 회장단 참석 여부 확인
+                            const withLeader = event.color === 'pinkred';
+                            
+                            // 심방리스트 업데이트
+                            if (!visitData[name]) {
+                                visitData[name] = {};
+                            }
+                            visitData[name].date = formattedDate;
+                            visitData[name].withLeader = withLeader;
+                            saveToFirebase('visitData', visitData);
+                            
+                            // 심방리스트가 열려있으면 다시 렌더링
+                            if (document.getElementById('visit')?.classList.contains('active')) {
+                                renderVisitList();
+                            }
+                            
+                            // 입력 필드도 업데이트
+                            const dateInput = document.getElementById(`date-input-${name}-${type}`);
+                            const leaderCheckbox = document.getElementById(`leader-${name}-${type}`);
+                            if (dateInput) dateInput.value = formattedDate;
+                            if (leaderCheckbox) leaderCheckbox.checked = withLeader;
+                        }
+                    }
+                }
+            }
+            
+            // Move to new month if needed
+            if (dayEl.classList.contains('other-month')) {
+                const newDate = new Date(newDateStr);
+                currentCalendarDate = new Date(newDate.getFullYear(), newDate.getMonth(), 1);
+            }
+            
+            renderCalendar();
+            draggedEvent = null;
+            return false;
+        }
+
+        function addEventToDate(dateStr) {
+            const title = prompt('일정 제목을 입력하세요:');
+            if (title && title.trim()) {
+                const color = prompt('색상을 입력하세요 (yellow/grey/blue/darkblue/orange/pink/green/brightyellow):') || 'blue';
+                const newEvent = {
+                    id: Date.now().toString(),
+                    date: dateStr,
+                    title: title.trim(),
+                    color: color,
+                    endDate: dateStr,
+                    description: ''
+                };
+                calendarEvents.push(newEvent);
+                saveToFirebase('youthCalendarEvents', calendarEvents);
+                renderCalendar();
+            }
+        }
+
+        function editEvent(event) {
+            const action = prompt('일정을 수정하시겠습니까?\n수정: 새 제목 입력\n삭제: "삭제" 또는 "delete" 입력\n취소: 취소 버튼', event.title);
+            if (action === null) {
+                return; // 취소
+            }
+            
+            const actionLower = action.trim().toLowerCase();
+            if (actionLower === '삭제' || actionLower === 'delete' || actionLower === 'del') {
+                // 삭제 확인
+                if (confirm(`"${event.title}" 일정을 삭제하시겠습니까?`)) {
+                    deleteEvent(event.id);
+                }
+            } else if (action && action.trim() && action.trim() !== event.title) {
+                // 이벤트 제목 업데이트
+                const eventIndex = calendarEvents.findIndex(e => e.id === event.id);
+                if (eventIndex !== -1) {
+                    calendarEvents[eventIndex].title = action.trim();
+                    saveToFirebase('youthCalendarEvents', calendarEvents);
+                    renderCalendar();
+                }
+            }
+        }
+
+        function deleteEvent(eventId) {
+            const event = calendarEvents.find(e => e.id === eventId);
+            if (!event) return;
+            
+            // 심방 일정인 경우 심방리스트에서도 제거
+            const visitMatch = event.title.match(/^(.+?)([bs]) 심방$/);
+            if (visitMatch) {
+                const name = visitMatch[1];
+                if (visitData[name]) {
+                    delete visitData[name].date;
+                    if (Object.keys(visitData[name]).length === 0) {
+                        delete visitData[name];
+                    }
+                    saveToFirebase('visitData', visitData);
+                    
+                    // 심방리스트가 열려있으면 다시 렌더링
+                    if (document.getElementById('visit')?.classList.contains('active')) {
+                        renderVisitList();
+                    }
+                }
+            }
+            
+            // 일정 삭제
+            calendarEvents = calendarEvents.filter(e => e.id !== eventId);
+            saveToFirebase('youthCalendarEvents', calendarEvents);
+            renderCalendar();
+        }
+
+        function showEventDetail(event) {
+            const endDate = event.endDate && event.endDate !== event.date ? `\n종료: ${event.endDate}` : '';
+            alert(`일정: ${event.title}\n시작: ${event.date}${endDate}`);
+        }
+
+        // Excel 업로드 처리
+        function handleExcelUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                    
+                    parseExcelData(jsonData);
+                    alert('엑셀 파일이 성공적으로 업로드되었습니다!');
+                    renderCalendar();
+                } catch (error) {
+                    alert('엑셀 파일 읽기 오류: ' + error.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function parseExcelData(data) {
+            // Excel 데이터를 파싱하여 calendarEvents에 추가
+            // 첫 번째 행은 헤더로 가정
+            // 필요한 컬럼: 날짜, 제목, 색상, 종료날짜(선택)
+            
+            if (data.length < 2) {
+                alert('데이터가 충분하지 않습니다.');
+                return;
+            }
+            
+            const newEvents = [];
+            for (let i = 1; i < data.length; i++) {
+                const row = data[i];
+                if (row.length < 2) continue;
+                
+                const date = row[0]; // 날짜 컬럼
+                const title = row[1]; // 제목 컬럼
+                const color = row[2] || 'blue'; // 색상 컬럼
+                const endDate = row[3] || date; // 종료날짜 컬럼
+                
+                if (date && title) {
+                    newEvents.push({
+                        id: Date.now().toString() + '_' + i,
+                        date: convertExcelDate(date),
+                        title: String(title),
+                        color: color,
+                        endDate: convertExcelDate(endDate)
+                    });
+                }
+            }
+            
+            if (newEvents.length > 0) {
+                // 기존 이벤트에 추가 (또는 교체)
+                const replace = confirm('기존 일정을 모두 삭제하고 새로 추가하시겠습니까?\n취소를 누르면 기존 일정에 추가됩니다.');
+                if (replace) {
+                    calendarEvents = newEvents;
+                } else {
+                    calendarEvents = calendarEvents.concat(newEvents);
+                }
+                saveToFirebase('youthCalendarEvents', calendarEvents);
+            }
+        }
+
+        function convertExcelDate(excelDate) {
+            // Excel 날짜를 YYYY-MM-DD 형식으로 변환
+            if (typeof excelDate === 'string' && excelDate.includes('-')) {
+                return excelDate; // 이미 올바른 형식
+            }
+            
+            if (typeof excelDate === 'number') {
+                // Excel 날짜는 1900-01-01부터의 일수
+                const date = new Date((excelDate - 25569) * 86400 * 1000);
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            }
+            
+            return excelDate;
+        }
+
+        // Calendar navigation
+        document.addEventListener('DOMContentLoaded', function() {
+            // 섹션 화면 캘린더 네비게이션
+            const prevBtn = document.getElementById('prev-month');
+            const nextBtn = document.getElementById('next-month');
+            
+            if (prevBtn) {
+                prevBtn.addEventListener('click', () => {
+                    currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
+                    renderCalendar();
+                });
+            }
+            
+            if (nextBtn) {
+                nextBtn.addEventListener('click', () => {
+                    currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
+                    renderCalendar();
+                });
+            }
+            
+            // 홈 화면 캘린더 네비게이션
+            const prevBtnHome = document.getElementById('prev-month-home');
+            const nextBtnHome = document.getElementById('next-month-home');
+            
+            if (prevBtnHome) {
+                prevBtnHome.addEventListener('click', () => {
+                    currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
+                    renderCalendar();
+                });
+            }
+            
+            if (nextBtnHome) {
+                nextBtnHome.addEventListener('click', () => {
+                    currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
+                    renderCalendar();
+                });
+            }
+        });
+
+        // Meeting Log functions
+        let meetingLogs = [];
+        let participantsList = ['박지훈', '김준영', '이예은', '김정이'];
+
+        function renderParticipantsChecklist() {
+            const container = document.getElementById('participants-checklist');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            participantsList.forEach((name, index) => {
+                const div = document.createElement('div');
+                div.className = 'checkbox-item';
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = `participant-${index}`;
+                checkbox.value = name;
+                
+                const label = document.createElement('label');
+                label.htmlFor = `participant-${index}`;
+                label.textContent = name;
+                
+                div.appendChild(checkbox);
+                div.appendChild(label);
+                div.onclick = (e) => {
+                    if (e.target !== checkbox) {
+                        checkbox.checked = !checkbox.checked;
+                    }
+                };
+                
+                container.appendChild(div);
+            });
+        }
+
+        function addParticipantToList() {
+            const input = document.getElementById('new-participant-name');
+            const name = input.value.trim();
+            
+            if (name && !participantsList.includes(name)) {
+                participantsList.push(name);
+                saveToFirebase('youthParticipantsList', participantsList);
+                renderParticipantsChecklist();
+                input.value = '';
+            } else if (participantsList.includes(name)) {
+                alert('이미 존재하는 참가자입니다.');
+            }
+        }
+
+        function openMeetingModal() {
+            document.getElementById('meeting-modal').classList.add('active');
+            document.getElementById('meeting-form').reset();
+            renderParticipantsChecklist();
+        }
+
+        function closeMeetingModal() {
+            document.getElementById('meeting-modal').classList.remove('active');
+        }
+
+        let currentEditingMeetingId = null;
+
+        function openMeetingModal(meetingId = null) {
+            document.getElementById('meeting-modal').classList.add('active');
+            document.getElementById('meeting-form').reset();
+            document.getElementById('meeting-edit-id').value = '';
+            currentEditingMeetingId = null;
+            renderParticipantsChecklist();
+            
+            if (meetingId) {
+                // 수정 모드
+                const meeting = meetingLogs.find(m => m.id === meetingId);
+                if (meeting) {
+                    document.getElementById('meeting-modal-title').textContent = '회의록 수정';
+                    document.getElementById('meeting-edit-id').value = meetingId;
+                    document.getElementById('meeting-date').value = meeting.date;
+                    document.getElementById('meeting-pre-share').value = meeting.preShare || '';
+                    document.getElementById('meeting-result').value = meeting.result || '';
+                    currentEditingMeetingId = meetingId;
+                    
+                    // 참가자 체크
+                    if (meeting.participants) {
+                        meeting.participants.forEach(name => {
+                            const checkbox = document.querySelector(`#participants-checklist input[value="${name}"]`);
+                            if (checkbox) checkbox.checked = true;
+                        });
+                    }
+                    
+                    // 요청사항 로드
+                    renderRequestsInModal(meeting.requests || []);
+                }
+            } else {
+                // 추가 모드
+                document.getElementById('meeting-modal-title').textContent = '회의록 작성';
+                document.getElementById('requests-tbody').innerHTML = '';
+            }
+        }
+        
+        let requestRowCount = 0;
+        
+        function addRequestRow(request = '', result = '') {
+            const tbody = document.getElementById('requests-tbody');
+            const rowId = `request-row-${requestRowCount++}`;
+            const row = document.createElement('tr');
+            row.id = rowId;
+            row.innerHTML = `
+                <td style="padding: 10px; border: 1px solid var(--border);">
+                    <input type="text" 
+                           class="request-input" 
+                           value="${request}"
+                           placeholder="요청사항 입력"
+                           style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.95em;">
+                </td>
+                <td style="padding: 10px; border: 1px solid var(--border);">
+                    <input type="text" 
+                           class="request-result-input" 
+                           value="${result}"
+                           placeholder="교제 결과 입력"
+                           style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.95em;"
+                           onchange="updateRequestResult('${rowId}', this.value)">
+                </td>
+                <td style="padding: 10px; border: 1px solid var(--border); text-align: center;">
+                    <button type="button" 
+                            class="btn-primary" 
+                            onclick="removeRequestRow('${rowId}')" 
+                            style="padding: 6px 12px; font-size: 0.9em; background: #e74c3c;">삭제</button>
+                </td>
+            `;
+            tbody.appendChild(row);
+        }
+        
+        function removeRequestRow(rowId) {
+            const row = document.getElementById(rowId);
+            if (row) {
+                row.remove();
+            }
+        }
+        
+        function renderRequestsInModal(requests) {
+            const tbody = document.getElementById('requests-tbody');
+            tbody.innerHTML = '';
+            requestRowCount = 0;
+            
+            if (requests && requests.length > 0) {
+                requests.forEach(req => {
+                    addRequestRow(req.request || '', req.result || '');
+                });
+            }
+        }
+        
+        function updateRequestResult(rowId, result) {
+            const row = document.getElementById(rowId);
+            if (row) {
+                const requestInput = row.querySelector('.request-input');
+                const request = requestInput ? requestInput.value : '';
+                
+                // 현재 편집 중인 회의록 ID 가져오기
+                const meetingId = document.getElementById('meeting-edit-id').value;
+                if (meetingId) {
+                    const meeting = meetingLogs.find(m => m.id === meetingId);
+                    if (meeting && meeting.requests) {
+                        const requestIndex = meeting.requests.findIndex(r => r.request === request);
+                        if (requestIndex !== -1) {
+                            meeting.requests[requestIndex].result = result;
+                            saveToFirebase('youthMeetingLogs', meetingLogs);
+                            
+                            // 요청사항 테이블도 업데이트
+                            if (document.getElementById('requests')?.classList.contains('active')) {
+                                renderRequestsTable();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        function renderRequestsTable() {
+            const tbody = document.getElementById('requests-main-tbody');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '';
+            
+            // 모든 회의록에서 요청사항 수집
+            const allRequests = [];
+            meetingLogs.forEach(meeting => {
+                if (meeting.requests && meeting.requests.length > 0) {
+                    meeting.requests.forEach((req, reqIndex) => {
+                        if (req.request) {
+                            allRequests.push({
+                                meetingId: meeting.id,
+                                meetingDate: meeting.date,
+                                request: req.request,
+                                result: req.result || '',
+                                isFirst: reqIndex === 0 // 첫 번째 요청사항인지 표시
+                            });
+                        }
+                    });
+                }
+            });
+            
+            // 날짜순으로 정렬
+            allRequests.sort((a, b) => {
+                const dateCompare = new Date(a.meetingDate) - new Date(b.meetingDate);
+                if (dateCompare !== 0) return dateCompare;
+                // 같은 날짜면 첫 번째 요청사항이 먼저 오도록
+                return a.isFirst ? -1 : 1;
+            });
+            
+            let currentDate = '';
+            allRequests.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                
+                // 날짜 포맷팅 (YYYY-MM-DD -> MM/DD)
+                const dateParts = item.meetingDate.split('-');
+                const formattedDate = `${parseInt(dateParts[1])}/${parseInt(dateParts[2])}`;
+                
+                // 날짜가 변경된 경우에만 currentDate 업데이트
+                const isNewDate = formattedDate !== currentDate;
+                if (isNewDate) {
+                    currentDate = formattedDate;
+                }
+                
+                // 같은 날짜의 모든 요청사항에 날짜 표시
+                const showDate = isNewDate || index === 0;
+                
+                // HTML 이스케이프 처리
+                const escapedRequest = item.request.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+                
+                tr.innerHTML = `
+                    <td style="padding: 12px; border: 1px solid var(--border);">${formattedDate}</td>
+                    <td style="padding: 12px; border: 1px solid var(--border);">${item.request}</td>
+                    <td style="padding: 12px; border: 1px solid var(--border);">
+                        <input type="text" 
+                               class="request-result-main-input" 
+                               data-meeting-id="${item.meetingId}"
+                               data-request="${escapedRequest}"
+                               value="${item.result}"
+                               placeholder="교제 결과 입력"
+                               style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.95em;"
+                               onchange="updateRequestResultFromMain('${item.meetingId}', '${escapedRequest}', this.value)">
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+        
+        function updateRequestResultFromMain(meetingId, request, result) {
+            const meeting = meetingLogs.find(m => m.id === meetingId);
+            if (meeting && meeting.requests) {
+                const requestIndex = meeting.requests.findIndex(r => r.request === request);
+                if (requestIndex !== -1) {
+                    meeting.requests[requestIndex].result = result;
+                    saveToFirebase('youthMeetingLogs', meetingLogs);
+                    
+                    // 회의록 상세보기가 열려있으면 업데이트
+                    if (document.getElementById('meeting-detail-modal')?.classList.contains('active')) {
+                        if (currentDetailMeetingId === meetingId) {
+                            showMeetingDetail(meeting);
+                        }
+                    }
+                }
+            }
+        }
+        
+        function updateRequestResultFromDetail(meetingId, request, result) {
+            const meeting = meetingLogs.find(m => m.id === meetingId);
+            if (meeting && meeting.requests) {
+                const requestIndex = meeting.requests.findIndex(r => r.request === request);
+                if (requestIndex !== -1) {
+                    meeting.requests[requestIndex].result = result;
+                    saveToFirebase('youthMeetingLogs', meetingLogs);
+                    
+                    // 요청사항 테이블도 업데이트
+                    if (document.getElementById('requests')?.classList.contains('active')) {
+                        renderRequestsTable();
+                    }
+                }
+            }
+        }
+
+        function saveMeetingLog(event) {
+            event.preventDefault();
+            
+            // 체크된 참가자 수집
+            const checkboxes = document.querySelectorAll('#participants-checklist input[type="checkbox"]:checked');
+            const participantsArray = Array.from(checkboxes).map(cb => cb.value);
+            
+            // 요청사항 수집
+            const requests = [];
+            const requestRows = document.querySelectorAll('#requests-tbody tr');
+            requestRows.forEach(row => {
+                const requestInput = row.querySelector('.request-input');
+                const resultInput = row.querySelector('.request-result-input');
+                const request = requestInput ? requestInput.value.trim() : '';
+                const result = resultInput ? resultInput.value.trim() : '';
+                
+                if (request) {
+                    requests.push({
+                        request: request,
+                        result: result
+                    });
+                }
+            });
+            
+            const editId = document.getElementById('meeting-edit-id').value;
+            
+            const meetingDate = document.getElementById('meeting-date').value;
+            
+            if (editId) {
+                // 수정 모드
+                const index = meetingLogs.findIndex(m => m.id === editId);
+                if (index !== -1) {
+                    const oldDate = meetingLogs[index].date;
+                    meetingLogs[index].date = meetingDate;
+                    meetingLogs[index].preShare = document.getElementById('meeting-pre-share').value;
+                    meetingLogs[index].result = document.getElementById('meeting-result').value;
+                    meetingLogs[index].participants = participantsArray;
+                    meetingLogs[index].requests = requests;
+                    
+                    // 캘린더 이벤트 업데이트
+                    updateMeetingCalendarEvent(editId, oldDate, meetingDate);
+                }
+            } else {
+                // 추가 모드
+            const newLog = {
+                id: Date.now().toString(),
+                    date: meetingDate,
+                preShare: document.getElementById('meeting-pre-share').value,
+                result: document.getElementById('meeting-result').value,
+                participants: participantsArray,
+                    requests: requests
+            };
+            meetingLogs.push(newLog);
+                
+                // 캘린더에 이벤트 추가
+                addMeetingCalendarEvent(newLog.id, meetingDate);
+            }
+            
+            saveToFirebase('youthMeetingLogs', meetingLogs);
+            
+            closeMeetingModal();
+            renderMeetingTable();
+            
+            // 캘린더가 열려있으면 다시 렌더링
+            if (document.getElementById('schedule')?.classList.contains('active')) {
+                renderCalendar();
+            }
+            
+            // 요청사항 섹션이 열려있으면 업데이트
+            if (document.getElementById('requests')?.classList.contains('active')) {
+                renderRequestsTable();
+            }
+        }
+
+        function deleteMeetingLog(meetingId) {
+            if (!confirm('회의록을 삭제하시겠습니까?')) return;
+            
+            meetingLogs = meetingLogs.filter(m => m.id !== meetingId);
+            saveToFirebase('youthMeetingLogs', meetingLogs);
+            renderMeetingTable();
+        }
+
+        let currentDetailMeetingId = null;
+
+        function showMeetingDetail(log) {
+            currentDetailMeetingId = log.id;
+            const content = document.getElementById('meeting-detail-content');
+            
+            // 참석자 그리드 생성
+            let participantsHTML = '';
+            if (log.participants && log.participants.length > 0) {
+                participantsHTML = '<div class="participants-grid">';
+                log.participants.forEach(p => {
+                    participantsHTML += `<div class="participant-item">${p}</div>`;
+                });
+                participantsHTML += '</div>';
+            } else if (log.attendees) {
+                participantsHTML = `<div class="meeting-content">${log.attendees}</div>`;
+            }
+            
+            content.innerHTML = `
+                <div class="meeting-log-container">
+                    <div class="meeting-log-title">하나부 임원 회의록</div>
+                    
+                    ${log.preShare ? `
+                    <div class="meeting-section">
+                        <div class="meeting-section-title">회의 전 공유사항</div>
+                        <div class="meeting-content">${log.preShare}</div>
+                    </div>
+                    ` : ''}
+                    
+                    <div class="meeting-section">
+                        <div class="meeting-section-title">회의 결과</div>
+                        ${formatMeetingResultAsTable(log.result || log.content || '-')}
+                    </div>
+                    
+                    ${log.decision ? `
+                    <div class="meeting-section">
+                        <div class="meeting-section-title">결정사항</div>
+                        <div class="meeting-content">${log.decision}</div>
+                    </div>
+                    ` : ''}
+                    
+                    <div class="meeting-section">
+                        <div class="meeting-section-title">회의 참가자</div>
+                        ${participantsHTML}
+                    </div>
+                    
+                    ${log.requests && log.requests.length > 0 ? `
+                    <div class="meeting-section">
+                        <div class="meeting-section-title">회장단 요청사항</div>
+                        <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+                            <thead>
+                                <tr>
+                                    <th style="padding: 10px; background: var(--primary-50); border: 1px solid var(--border); text-align: left;">회장단 요청사항</th>
+                                    <th style="padding: 10px; background: var(--primary-50); border: 1px solid var(--border); text-align: left;">교제 결과</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${log.requests.map((req, idx) => {
+                                    const escapedRequest = (req.request || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+                                    return `
+                                    <tr>
+                                        <td style="padding: 10px; border: 1px solid var(--border);">${req.request || '-'}</td>
+                                        <td style="padding: 10px; border: 1px solid var(--border);">
+                                            <input type="text" 
+                                                   class="request-result-detail-input" 
+                                                   data-meeting-id="${log.id}"
+                                                   data-request="${escapedRequest}"
+                                                   value="${req.result || ''}"
+                                                   placeholder="교제 결과 입력"
+                                                   style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.95em;"
+                                                   onchange="updateRequestResultFromDetail('${log.id}', '${escapedRequest}', this.value)">
+                                        </td>
+                                    </tr>
+                                `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+            document.getElementById('meeting-detail-modal').classList.add('active');
+        }
+
+        function editMeetingFromDetail() {
+            if (currentDetailMeetingId) {
+                closeMeetingDetailModal();
+                setTimeout(() => {
+                    openMeetingModal(currentDetailMeetingId);
+                }, 200);
+            }
+        }
+
+        function formatMeetingResultAsTable(resultText) {
+            if (!resultText || resultText === '-') {
+                return '<div class="meeting-content">-</div>';
+            }
+            
+            // 줄바꿈으로 분리
+            const lines = resultText.split('\n').filter(line => line.trim());
+            
+            if (lines.length === 0) {
+                return '<div class="meeting-content">-</div>';
+            }
+            
+            // 각 줄을 파싱하여 키-값 쌍으로 변환
+            const rows = [];
+            lines.forEach(line => {
+                const trimmedLine = line.trim();
+                if (trimmedLine.includes(':')) {
+                    const parts = trimmedLine.split(':').map(p => p.trim());
+                    if (parts.length >= 2) {
+                        const key = parts[0];
+                        const value = parts.slice(1).join(':').trim();
+                        rows.push({ key, value });
+                    } else {
+                        rows.push({ key: '', value: trimmedLine });
+                    }
+                } else {
+                    rows.push({ key: '', value: trimmedLine });
+                }
+            });
+            
+            if (rows.length === 0) {
+                return '<div class="meeting-content">' + resultText + '</div>';
+            }
+            
+            // 표 생성
+            let tableHTML = '<table style="width: 100%; border-collapse: collapse; margin-top: 15px;">';
+            tableHTML += '<thead>';
+            tableHTML += '<tr>';
+            tableHTML += '<th style="padding: 10px; background: var(--primary-50); border: 1px solid var(--border); text-align: left; width: 150px;">항목</th>';
+            tableHTML += '<th style="padding: 10px; background: var(--primary-50); border: 1px solid var(--border); text-align: left;">내용</th>';
+            tableHTML += '</tr>';
+            tableHTML += '</thead>';
+            tableHTML += '<tbody>';
+            
+            rows.forEach(row => {
+                tableHTML += '<tr>';
+                tableHTML += `<td style="padding: 10px; border: 1px solid var(--border); font-weight: 600;">${row.key || '-'}</td>`;
+                tableHTML += `<td style="padding: 10px; border: 1px solid var(--border);">${row.value || '-'}</td>`;
+                tableHTML += '</tr>';
+            });
+            
+            tableHTML += '</tbody>';
+            tableHTML += '</table>';
+            
+            return tableHTML;
+        }
+
+        function renderMeetingTable() {
+            const tbody = document.getElementById('meeting-tbody');
+            tbody.innerHTML = '';
+            
+            meetingLogs.sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            meetingLogs.forEach(log => {
+                const tr = document.createElement('tr');
+                tr.style.cursor = 'pointer';
+                tr.onclick = () => showMeetingDetail(log);
+                
+                const resultText = log.result || log.content || '-';
+                // 회의 결과 전체 표시 (줄바꿈 유지)
+                const displayResult = resultText && resultText !== '-' 
+                    ? resultText.replace(/\n/g, '<br>') 
+                    : '-';
+                
+                tr.innerHTML = `
+                    <td>${log.date}</td>
+                    <td style="max-width: 600px; word-wrap: break-word; padding: 12px; white-space: pre-wrap; line-height: 1.6;">${displayResult}</td>
+                    <td>
+                        <button class="btn-primary" onclick="event.stopPropagation(); openMeetingModal('${log.id}')" style="padding: 6px 12px; font-size: 0.9em; margin-right: 5px;">수정</button>
+                        <button class="btn-primary" onclick="event.stopPropagation(); deleteMeetingLog('${log.id}')" style="padding: 6px 12px; font-size: 0.9em; background: #e74c3c;">삭제</button>
+                    </td>
+                `;
+                
+                tbody.appendChild(tr);
+            });
+        }
+
+
+        function closeMeetingDetailModal() {
+            document.getElementById('meeting-detail-modal').classList.remove('active');
+        }
+
+        // 심방리스트 기능
+        const brothersList = ['박지훈', '김준영', '유원열', '윤소망', '진민수', '박진환', '김주연', '함누리', '최민성'];
+        const sistersList = ['이예은', '김정이', '김행미', '박채은', '최수아', '구자윤', '정민주', '박소정', '김단아', '강리원', '백예림', '강민서', '김민지', '엄선형', '우나경'];
+        
+        // 심방 데이터 구조: { name: { date: '12/16', withLeader: true/false } }
+        let visitData = {};
+        
+        // 기존 visitDates 데이터를 visitData로 마이그레이션
+        async function migrateVisitData() {
+            const oldVisitDates = await loadFromFirebase('visitDates', {});
+            if (Object.keys(oldVisitDates).length > 0 && Object.keys(visitData).length === 0) {
+                Object.keys(oldVisitDates).forEach(name => {
+                    visitData[name] = {
+                        date: oldVisitDates[name],
+                        withLeader: false
+                    };
+                });
+                await saveToFirebase('visitData', visitData);
+                // 기존 데이터는 자동으로 덮어쓰기됨
+            }
+        }
+
+        function syncVisitDataFromCalendar() {
+            // 캘린더에서 심방 일정을 찾아서 심방리스트에 반영
+            calendarEvents.forEach(event => {
+                const visitMatch = event.title.match(/^(.+?)([bs]) 심방$/);
+                if (visitMatch) {
+                    const name = visitMatch[1];
+                    const type = visitMatch[2];
+                    
+                    // 날짜를 MM/DD 형식으로 변환
+                    if (event.date) {
+                        const dateParts = event.date.split('-');
+                        const month = parseInt(dateParts[1]);
+                        const day = parseInt(dateParts[2]);
+                        const formattedDate = `${month}/${day}`;
+                        
+                        // 회장단 참석 여부 확인 (pinkred 색상이면 참석)
+                        const withLeader = event.color === 'pinkred';
+                        
+                        if (!visitData[name]) {
+                            visitData[name] = {};
+                        }
+                        visitData[name].date = formattedDate;
+                        visitData[name].withLeader = withLeader;
+                    }
+                }
+            });
+            saveToFirebase('visitData', visitData);
+        }
+
+        function syncVisitDataToCalendar() {
+            // Firebase에서 로드한 visitData를 캘린더에 반영
+            Object.keys(visitData).forEach(name => {
+                const visitInfo = visitData[name];
+                if (visitInfo && visitInfo.date) {
+                    const dateStr = visitInfo.date.trim();
+                    const dateMatch = dateStr.match(/^(\d{1,2})\/(\d{1,2})$/);
+                    
+                    if (dateMatch) {
+                        const month = parseInt(dateMatch[1]);
+                        const day = parseInt(dateMatch[2]);
+                        const year = month === 12 ? 2025 : 2026;
+                        const fullDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                        
+                        // 형제(b)와 자매(s) 모두 확인
+                        ['b', 's'].forEach(type => {
+                            const eventTitle = `${name}${type} 심방`;
+                            const existingEventIndex = calendarEvents.findIndex(e => {
+                                const match = e.title.match(/^(.+?)([bs]) 심방$/);
+                                return match && match[1] === name && match[2] === type;
+                            });
+                            
+                            // 해당 이름이 형제/자매 리스트에 있는지 확인
+                            const isBrother = brothersList.includes(name);
+                            const isSister = sistersList.includes(name);
+                            
+                            // 형제인 경우 b 타입만, 자매인 경우 s 타입만 추가
+                            if ((type === 'b' && isBrother) || (type === 's' && isSister)) {
+                                const withLeader = visitInfo.withLeader || false;
+                                const eventColor = withLeader ? 'pinkred' : 'yellow';
+                                
+                                if (existingEventIndex === -1) {
+                                    // 새 이벤트 추가
+                                    const newEvent = {
+                                        id: `visit_${name}_${type}_${Date.now()}`,
+                                        date: fullDate,
+                                        title: eventTitle,
+                                        color: eventColor,
+                                        endDate: fullDate,
+                                        visitName: name,
+                                        visitType: type,
+                                        withLeader: withLeader
+                                    };
+                                    calendarEvents.push(newEvent);
+                                } else {
+                                    // 기존 이벤트 업데이트
+                                    calendarEvents[existingEventIndex].date = fullDate;
+                                    calendarEvents[existingEventIndex].color = eventColor;
+                                    calendarEvents[existingEventIndex].withLeader = withLeader;
+                                }
+                            }
+                        });
+                    }
+                }
+            });
+            
+            // 캘린더 이벤트 저장
+            saveToFirebase('youthCalendarEvents', calendarEvents);
+        }
+
+        function renderVisitList() {
+            const brothersTbody = document.getElementById('brothers-tbody');
+            const sistersTbody = document.getElementById('sisters-tbody');
+            
+            if (!brothersTbody || !sistersTbody) return;
+            
+            // 데이터 마이그레이션
+            migrateVisitData();
+            
+            // 캘린더에서 심방 일정 동기화
+            syncVisitDataFromCalendar();
+            
+            brothersTbody.innerHTML = '';
+            sistersTbody.innerHTML = '';
+            
+            // 형제 명단 렌더링
+            brothersList.forEach(name => {
+                const tr = document.createElement('tr');
+                const visitInfo = visitData[name] || {};
+                const visitDate = visitInfo.date || '';
+                const withLeader = visitInfo.withLeader || false;
+                const hasDate = !!visitDate;
+                
+                // 심방일자가 있으면 행 전체 스타일 적용
+                if (hasDate) {
+                    tr.style.background = 'rgba(0, 0, 0, 0.05)';
+                    tr.style.color = 'rgba(0, 0, 0, 0.5)';
+                }
+                
+                tr.innerHTML = `
+                    <td style="padding: 12px; font-weight: 600; ${hasDate ? 'color: rgba(0, 0, 0, 0.5);' : ''}">${name}</td>
+                    <td style="padding: 12px;">
+                        <div style="display: flex; gap: 5px;">
+                        <input type="text" 
+                               id="date-input-${name}-b"
+                               class="visit-date-input" 
+                               data-name="${name}" 
+                               data-type="b"
+                               value="${visitDate}"
+                               style="flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.95em; ${visitDate ? 'background: transparent; color: rgba(0, 0, 0, 0.5);' : ''}"
+                               oninput="updateRowStyle('${name}', 'b', this.value)">
+                            <button type="button" 
+                                    onclick="applyVisitDate('${name}', 'b')"
+                                    style="padding: 8px 15px; background: var(--primary-500); color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9em; font-weight: 600; white-space: nowrap;"
+                                    onmouseover="this.style.background='var(--primary-600)'"
+                                    onmouseout="this.style.background='var(--primary-500)'">확인</button>
+                        </div>
+                    </td>
+                    <td style="padding: 12px; text-align: center; ${hasDate ? 'color: rgba(0, 0, 0, 0.5);' : ''}">
+                        <input type="checkbox" 
+                               id="leader-${name}-b"
+                               data-name="${name}"
+                               data-type="b"
+                               ${withLeader ? 'checked' : ''}
+                               style="width: 20px; height: 20px; cursor: pointer;"
+                               onchange="updateVisitLeader('${name}', 'b', this.checked)">
+                    </td>
+                `;
+                brothersTbody.appendChild(tr);
+            });
+            
+            // 자매 명단 렌더링
+            sistersList.forEach(name => {
+                const tr = document.createElement('tr');
+                const visitInfo = visitData[name] || {};
+                const visitDate = visitInfo.date || '';
+                const withLeader = visitInfo.withLeader || false;
+                const hasDate = !!visitDate;
+                
+                // 심방일자가 있으면 행 전체 스타일 적용
+                if (hasDate) {
+                    tr.style.background = 'rgba(0, 0, 0, 0.05)';
+                    tr.style.color = 'rgba(0, 0, 0, 0.5)';
+                }
+                
+                tr.innerHTML = `
+                    <td style="padding: 12px; font-weight: 600; ${hasDate ? 'color: rgba(0, 0, 0, 0.5);' : ''}">${name}</td>
+                    <td style="padding: 12px;">
+                        <div style="display: flex; gap: 5px;">
+                        <input type="text" 
+                               id="date-input-${name}-s"
+                               class="visit-date-input" 
+                               data-name="${name}" 
+                               data-type="s"
+                               value="${visitDate}"
+                               style="flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.95em; ${visitDate ? 'background: transparent; color: rgba(0, 0, 0, 0.5);' : ''}"
+                               oninput="updateRowStyle('${name}', 's', this.value)">
+                            <button type="button" 
+                                    onclick="applyVisitDate('${name}', 's')"
+                                    style="padding: 8px 15px; background: var(--primary-500); color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9em; font-weight: 600; white-space: nowrap;"
+                                    onmouseover="this.style.background='var(--primary-600)'"
+                                    onmouseout="this.style.background='var(--primary-500)'">확인</button>
+                        </div>
+                    </td>
+                    <td style="padding: 12px; text-align: center; ${hasDate ? 'color: rgba(0, 0, 0, 0.5);' : ''}">
+                        <input type="checkbox" 
+                               id="leader-${name}-s"
+                               data-name="${name}"
+                               data-type="s"
+                               ${withLeader ? 'checked' : ''}
+                               style="width: 20px; height: 20px; cursor: pointer;"
+                               onchange="updateVisitLeader('${name}', 's', this.checked)">
+                    </td>
+                `;
+                sistersTbody.appendChild(tr);
+            });
+        }
+
+        function updateRowStyle(name, type, dateValue) {
+            // 입력 필드 배경색 업데이트 (transparent로 설정하여 행 배경색이 보이도록)
+            const dateInput = document.getElementById(`date-input-${name}-${type}`);
+            if (dateInput) {
+                if (dateValue && dateValue.trim()) {
+                    dateInput.style.background = 'transparent';
+                    dateInput.style.color = 'rgba(0, 0, 0, 0.5)';
+                } else {
+                    dateInput.style.background = '';
+                    dateInput.style.color = '';
+                }
+            }
+            
+            // 행 전체 스타일 업데이트
+            const row = dateInput ? dateInput.closest('tr') : null;
+            if (row) {
+                const hasDate = dateValue && dateValue.trim();
+                if (hasDate) {
+                    row.style.background = 'rgba(0, 0, 0, 0.05)';
+                    row.style.color = 'rgba(0, 0, 0, 0.5)';
+                    // 모든 셀의 텍스트 색상 변경
+                    const cells = row.querySelectorAll('td');
+                    cells.forEach(cell => {
+                        cell.style.color = 'rgba(0, 0, 0, 0.5)';
+                    });
+                } else {
+                    row.style.background = '';
+                    row.style.color = '';
+                    // 모든 셀의 텍스트 색상 복원
+                    const cells = row.querySelectorAll('td');
+                    cells.forEach(cell => {
+                        cell.style.color = '';
+                    });
+                }
+            }
+        }
+
+        function applyVisitDate(name, type) {
+            const dateInput = document.getElementById(`date-input-${name}-${type}`);
+            const leaderCheckbox = document.getElementById(`leader-${name}-${type}`);
+            const dateStr = dateInput ? dateInput.value.trim() : '';
+            const withLeader = leaderCheckbox ? leaderCheckbox.checked : false;
+            
+            // 빈 값인 경우 삭제 처리
+            if (!dateStr) {
+                // updateVisitDate 호출하여 삭제 처리
+                updateVisitDate(name, type, '', withLeader);
+                
+                // 행 전체 스타일 원복
+                updateRowStyle(name, type, '');
+                
+                alert('심방일자가 삭제되었습니다.');
+                return;
+            }
+            
+            // 날짜 형식 검증
+            const dateMatch = dateStr.match(/^(\d{1,2})\/(\d{1,2})$/);
+            if (!dateMatch) {
+                alert('날짜 형식이 올바르지 않습니다. 예: 12/16');
+                return;
+            }
+            
+            // updateVisitDate 호출
+            const result = updateVisitDate(name, type, dateStr, withLeader);
+            
+            // 행 전체 스타일 업데이트 (확실하게 적용)
+            updateRowStyle(name, type, dateStr);
+            
+            // 확정 메시지 표시
+            if (result !== false) {
+                alert('확정되었습니다.');
+            }
+        }
+
+        function updateVisitDate(name, type, dateStr, withLeader = false) {
+            // 날짜 형식 검증 및 변환 (12/16 -> 2025-12-16, 1/15 -> 2026-01-15)
+            let fullDate = '';
+            if (dateStr && dateStr.trim()) {
+                const dateMatch = dateStr.trim().match(/^(\d{1,2})\/(\d{1,2})$/);
+                if (dateMatch) {
+                    const month = parseInt(dateMatch[1]);
+                    const day = parseInt(dateMatch[2]);
+                    // 12월은 2025년, 나머지는 2026년
+                    const year = month === 12 ? 2025 : 2026;
+                    fullDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                } else {
+                    alert('날짜 형식이 올바르지 않습니다. 예: 12/16');
+                    return;
+                }
+            }
+            
+            // 심방리스트 데이터 업데이트
+            if (fullDate) {
+                if (!visitData[name]) {
+                    visitData[name] = {};
+                }
+                visitData[name].date = dateStr.trim();
+                visitData[name].withLeader = withLeader;
+            } else {
+                if (visitData[name]) {
+                    delete visitData[name].date;
+                    if (Object.keys(visitData[name]).length === 0) {
+                        delete visitData[name];
+                    }
+                }
+            }
+            saveToFirebase('visitData', visitData);
+            
+            // 기존 심방 일정 제거 (같은 이름과 타입의 일정)
+            const eventTitle = `${name}${type} 심방`;
+            calendarEvents = calendarEvents.filter(e => {
+                // 같은 이름과 타입의 심방 일정이 아니거나, 다른 사람의 심방 일정인 경우 유지
+                const match = e.title.match(/^(.+?)([bs]) 심방$/);
+                if (match) {
+                    return !(match[1] === name && match[2] === type);
+                }
+                return true;
+            });
+            
+            // 새 일정 추가
+            if (fullDate) {
+                const eventColor = withLeader ? 'pinkred' : 'yellow';
+                const newEvent = {
+                    id: `visit_${name}_${type}_${Date.now()}`,
+                    date: fullDate,
+                    title: eventTitle,
+                    color: eventColor,
+                    endDate: fullDate,
+                    visitName: name,
+                    visitType: type,
+                    withLeader: withLeader
+                };
+                calendarEvents.push(newEvent);
+                saveToFirebase('youthCalendarEvents', calendarEvents);
+            } else {
+                saveToFirebase('youthCalendarEvents', calendarEvents);
+            }
+            
+            // 행 전체 스타일 업데이트
+            updateRowStyle(name, type, dateStr);
+            
+            // 캘린더 다시 렌더링 (홈 화면과 섹션 화면 모두 업데이트)
+            renderCalendar();
+            
+            // 캘린더에 반영되었는지 여부 반환 (성공 시 true, 삭제 시도 true)
+            return true;
+        }
+
+        function updateVisitLeader(name, type, withLeader) {
+            // 심방리스트 데이터 업데이트
+            if (!visitData[name]) {
+                visitData[name] = {};
+            }
+            visitData[name].withLeader = withLeader;
+            saveToFirebase('visitData', visitData);
+            
+            // 기존 심방 일정 찾아서 색상 업데이트
+            const eventTitle = `${name}${type} 심방`;
+            const eventIndex = calendarEvents.findIndex(e => {
+                const match = e.title.match(/^(.+?)([bs]) 심방$/);
+                return match && match[1] === name && match[2] === type;
+            });
+            
+            if (eventIndex !== -1) {
+                calendarEvents[eventIndex].color = withLeader ? 'pinkred' : 'yellow';
+                calendarEvents[eventIndex].withLeader = withLeader;
+                saveToFirebase('youthCalendarEvents', calendarEvents);
+                
+                // 캘린더 다시 렌더링 (홈 화면과 섹션 화면 모두 업데이트)
+                renderCalendar();
+            }
+        }
+
+
+        // 식사 준비 기능
+        let mealData = [];
+        let currentEditingMealId = null;
+
+        function openMealModal(mealId = null) {
+            document.getElementById('meal-modal').classList.add('active');
+            document.getElementById('meal-form').reset();
+            document.getElementById('meal-edit-id').value = '';
+            currentEditingMealId = null;
+            
+            if (mealId) {
+                // 수정 모드
+                const meal = mealData.find(m => m.id === mealId);
+                if (meal) {
+                    document.getElementById('meal-modal-title').textContent = '식사 준비 수정';
+                    document.getElementById('meal-edit-id').value = mealId;
+                    document.getElementById('meal-date').value = meal.dateStr;
+                    document.getElementById('meal-menu').value = meal.menu;
+                    document.getElementById('meal-assignee').value = meal.assignee || '';
+                    currentEditingMealId = mealId;
+                }
+            } else {
+                // 추가 모드
+                document.getElementById('meal-modal-title').textContent = '식사 준비 추가';
+            }
+        }
+
+        function closeMealModal() {
+            document.getElementById('meal-modal').classList.remove('active');
+            currentEditingMealId = null;
+        }
+
+        function saveMeal(event) {
+            event.preventDefault();
+            
+            const dateStr = document.getElementById('meal-date').value.trim();
+            const menu = document.getElementById('meal-menu').value.trim();
+            const assignee = document.getElementById('meal-assignee').value.trim();
+            const editId = document.getElementById('meal-edit-id').value;
+            
+            // 날짜 형식 검증 및 변환
+            const dateMatch = dateStr.match(/^(\d{1,2})\/(\d{1,2})$/);
+            if (!dateMatch) {
+                alert('날짜 형식이 올바르지 않습니다. 예: 1/17');
+                return;
+            }
+            
+            const month = parseInt(dateMatch[1]);
+            const day = parseInt(dateMatch[2]);
+            const year = month === 12 ? 2025 : 2026;
+            const fullDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            
+            if (editId) {
+                // 수정 모드
+                const index = mealData.findIndex(m => m.id === editId);
+                if (index !== -1) {
+                    const oldDate = mealData[index].date;
+                    mealData[index].date = fullDate;
+                    mealData[index].dateStr = dateStr;
+                    mealData[index].menu = menu;
+                    mealData[index].assignee = assignee;
+                    mealData[index].title = `식사 준비 - ${menu}`;
+                    
+                    // 캘린더 업데이트
+                    const calendarIndex = calendarEvents.findIndex(e => e.mealId === editId);
+                    if (calendarIndex !== -1) {
+                        calendarEvents[calendarIndex].date = fullDate;
+                        calendarEvents[calendarIndex].endDate = fullDate;
+                        calendarEvents[calendarIndex].title = `식사 준비 - ${menu}`;
+                    }
+                }
+            } else {
+                // 추가 모드
+                const newMeal = {
+                    id: Date.now().toString(),
+                    date: fullDate,
+                    dateStr: dateStr,
+                    menu: menu,
+                    assignee: assignee,
+                    title: `식사 준비 - ${menu}`
+                };
+                
+                mealData.push(newMeal);
+                
+                // 캘린더에 추가
+                const calendarEvent = {
+                    id: `meal_${newMeal.id}`,
+                    date: fullDate,
+                    title: newMeal.title,
+                    color: 'grey',
+                    endDate: fullDate,
+                    mealId: newMeal.id
+                };
+                calendarEvents.push(calendarEvent);
+            }
+            
+            saveToFirebase('mealData', mealData);
+            saveToFirebase('youthCalendarEvents', calendarEvents);
+            
+            closeMealModal();
+            renderMealTable();
+            
+            // 캘린더 다시 렌더링 (홈 화면과 섹션 화면 모두 업데이트)
+            renderCalendar();
+        }
+
+        function renderMealTable() {
+            const tbody = document.getElementById('meal-tbody');
+            if (!tbody) return;
+            
+            // 전역 변수 mealData 사용 (이미 로드됨)
+            
+            tbody.innerHTML = '';
+            
+            // 날짜순으로 정렬
+            mealData.sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            mealData.forEach(meal => {
+                const tr = document.createElement('tr');
+                tr.style.cursor = 'pointer';
+                tr.onclick = () => openMealModal(meal.id);
+                
+                tr.innerHTML = `
+                    <td>${meal.dateStr}</td>
+                    <td>${meal.menu}</td>
+                    <td>${meal.assignee || '-'}</td>
+                    <td>
+                        <button class="btn-primary" onclick="event.stopPropagation(); openMealModal('${meal.id}')" style="padding: 6px 12px; font-size: 0.9em; margin-right: 5px;">수정</button>
+                        <button class="btn-primary" onclick="event.stopPropagation(); deleteMeal('${meal.id}')" style="padding: 6px 12px; font-size: 0.9em; background: #e74c3c;">삭제</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function deleteMeal(mealId) {
+            if (!confirm('식사 준비를 삭제하시겠습니까?')) return;
+            
+            // 식사 준비 데이터에서 제거
+            mealData = mealData.filter(m => m.id !== mealId);
+            saveToFirebase('mealData', mealData);
+            
+            // 캘린더에서도 제거
+            calendarEvents = calendarEvents.filter(e => e.mealId !== mealId);
+            saveToFirebase('youthCalendarEvents', calendarEvents);
+            
+            renderMealTable();
+            
+            // 캘린더 다시 렌더링 (홈 화면과 섹션 화면 모두 업데이트)
+            renderCalendar();
+        }
+
+        // 회의록 캘린더 연동 함수
+        function addMeetingCalendarEvent(meetingId, meetingDate) {
+            // 기존 이벤트가 있는지 확인
+            const existingIndex = calendarEvents.findIndex(e => e.meetingId === meetingId);
+            if (existingIndex === -1) {
+                const calendarEvent = {
+                    id: `meeting_${meetingId}`,
+                    date: meetingDate,
+                    title: '부서 임원모임',
+                    color: 'grey',
+                    endDate: meetingDate,
+                    meetingId: meetingId
+                };
+                calendarEvents.push(calendarEvent);
+                saveToFirebase('youthCalendarEvents', calendarEvents);
+            }
+        }
+
+        function updateMeetingCalendarEvent(meetingId, oldDate, newDate) {
+            const eventIndex = calendarEvents.findIndex(e => e.meetingId === meetingId);
+            if (eventIndex !== -1) {
+                calendarEvents[eventIndex].date = newDate;
+                calendarEvents[eventIndex].endDate = newDate;
+                saveToFirebase('youthCalendarEvents', calendarEvents);
+            } else {
+                // 이벤트가 없으면 추가
+                addMeetingCalendarEvent(meetingId, newDate);
+            }
+        }
+
+        // 부서교제 기능
+        let fellowshipData = [];
+        
+        // 초기 부서교제 데이터는 initializeData에서 처리
+
+        let currentEditingFellowshipId = null;
+        let preparationItemCount = 0;
+
+        function openFellowshipModal(fellowshipId = null) {
+            document.getElementById('fellowship-modal').classList.add('active');
+            document.getElementById('fellowship-form').reset();
+            document.getElementById('fellowship-edit-id').value = '';
+            currentEditingFellowshipId = null;
+            preparationItemCount = 0;
+            document.getElementById('preparations-list').innerHTML = '';
+            
+            if (fellowshipId) {
+                // 수정 모드
+                const fellowship = fellowshipData.find(f => f.id === fellowshipId);
+                if (fellowship) {
+                    document.getElementById('fellowship-modal-title').textContent = '부서교제 수정';
+                    document.getElementById('fellowship-edit-id').value = fellowshipId;
+                    document.getElementById('fellowship-date').value = fellowship.dateStr;
+                    document.getElementById('fellowship-content').value = fellowship.content;
+                    currentEditingFellowshipId = fellowshipId;
+                    
+                    // 준비 사항 로드
+                    if (fellowship.preparations && fellowship.preparations.length > 0) {
+                        fellowship.preparations.forEach((prep, index) => {
+                            addPreparationItem(prep.item, prep.assignee, prep.checked || false, index);
+                        });
+                    }
+                }
+            } else {
+                // 추가 모드
+                document.getElementById('fellowship-modal-title').textContent = '부서교제 추가';
+            }
+        }
+
+        function closeFellowshipModal() {
+            document.getElementById('fellowship-modal').classList.remove('active');
+            currentEditingFellowshipId = null;
+        }
+
+        function addPreparationItem(item = '', assignee = '', checked = false, index = null) {
+            const container = document.getElementById('preparations-list');
+            const itemId = index !== null ? index : preparationItemCount++;
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'preparation-item';
+            itemDiv.style.cssText = 'display: flex; gap: 10px; align-items: center; margin-bottom: 10px; padding: 10px; background: #fff; border: 1px solid var(--border); border-radius: 6px;';
+            
+            itemDiv.innerHTML = `
+                <input type="checkbox" 
+                       id="prep-check-${itemId}" 
+                       ${checked ? 'checked' : ''}
+                       style="width: 20px; height: 20px; cursor: pointer; flex-shrink: 0;">
+                <input type="text" 
+                       id="prep-item-${itemId}" 
+                       placeholder="준비 사항" 
+                       value="${item}"
+                       style="flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.95em;">
+                <span style="color: var(--muted);">-</span>
+                <input type="text" 
+                       id="prep-assignee-${itemId}" 
+                       placeholder="담당자" 
+                       value="${assignee}"
+                       style="width: 120px; padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.95em;">
+                <button type="button" 
+                        onclick="removePreparationItem(this)" 
+                        style="padding: 6px 12px; background: #e74c3c; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9em; flex-shrink: 0;">삭제</button>
+            `;
+            
+            container.appendChild(itemDiv);
+        }
+
+        function removePreparationItem(button) {
+            button.parentElement.remove();
+        }
+
+        function saveFellowship(event) {
+            event.preventDefault();
+            
+            const dateStr = document.getElementById('fellowship-date').value.trim();
+            const content = document.getElementById('fellowship-content').value.trim();
+            const editId = document.getElementById('fellowship-edit-id').value;
+            
+            if (!dateStr || !content) {
+                alert('날짜와 교제 내용을 모두 입력해주세요.');
+                return;
+            }
+            
+            // 날짜 형식 검증 및 변환
+            const dateMatch = dateStr.match(/^(\d{1,2})\/(\d{1,2})$/);
+            if (!dateMatch) {
+                alert('날짜 형식이 올바르지 않습니다. 예: 1/17');
+                return;
+            }
+            
+            const month = parseInt(dateMatch[1]);
+            const day = parseInt(dateMatch[2]);
+            const year = month === 12 ? 2025 : 2026;
+            const fullDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            
+            // 준비 사항 수집
+            const preparations = [];
+            const prepItems = document.querySelectorAll('.preparation-item');
+            prepItems.forEach(item => {
+                const itemId = item.querySelector('input[type="checkbox"]').id.replace('prep-check-', '');
+                const itemText = document.getElementById(`prep-item-${itemId}`).value.trim();
+                const assignee = document.getElementById(`prep-assignee-${itemId}`).value.trim();
+                const checked = document.getElementById(`prep-check-${itemId}`).checked;
+                
+                if (itemText) {
+                    preparations.push({
+                        item: itemText,
+                        assignee: assignee,
+                        checked: checked
+                    });
+                }
+            });
+            
+            if (editId) {
+                // 수정 모드
+                const index = fellowshipData.findIndex(f => f.id === editId);
+                if (index !== -1) {
+                    const oldDate = fellowshipData[index].date;
+                    fellowshipData[index].date = fullDate;
+                    fellowshipData[index].dateStr = dateStr;
+                    fellowshipData[index].content = content;
+                    fellowshipData[index].title = `부서교제 - ${content}`;
+                    fellowshipData[index].preparations = preparations;
+                    
+                    // 캘린더 업데이트
+                    const calendarIndex = calendarEvents.findIndex(e => e.fellowshipId === editId);
+                    if (calendarIndex !== -1) {
+                        calendarEvents[calendarIndex].date = fullDate;
+                        calendarEvents[calendarIndex].endDate = fullDate;
+                        calendarEvents[calendarIndex].title = `부서교제 - ${content}`;
+                    }
+                }
+            } else {
+                // 추가 모드
+                const newFellowship = {
+                    id: Date.now().toString(),
+                    date: fullDate,
+                    dateStr: dateStr,
+                    content: content,
+                    title: `부서교제 - ${content}`,
+                    preparations: preparations
+                };
+                
+                fellowshipData.push(newFellowship);
+                
+                // 캘린더에 추가
+                const calendarEvent = {
+                    id: `fellowship_${newFellowship.id}`,
+                    date: fullDate,
+                    title: newFellowship.title,
+                    color: 'darkblue',
+                    endDate: fullDate,
+                    fellowshipId: newFellowship.id
+                };
+                calendarEvents.push(calendarEvent);
+            }
+            
+            saveToFirebase('fellowshipData', fellowshipData);
+            saveToFirebase('youthCalendarEvents', calendarEvents);
+            
+            closeFellowshipModal();
+            renderFellowshipTable();
+            
+            // 캘린더 다시 렌더링 (홈 화면과 섹션 화면 모두 업데이트)
+            renderCalendar();
+        }
+
+        function renderFellowshipTable() {
+            const tbody = document.getElementById('fellowship-tbody');
+            if (!tbody) return;
+            
+            // 전역 변수 fellowshipData 사용 (이미 로드됨)
+            
+            tbody.innerHTML = '';
+            
+            // 날짜순으로 정렬
+            fellowshipData.sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            fellowshipData.forEach(fellowship => {
+                const tr = document.createElement('tr');
+                tr.style.cursor = 'pointer';
+                tr.onclick = () => showFellowshipDetail(fellowship);
+                
+                tr.innerHTML = `
+                    <td>${fellowship.dateStr}</td>
+                    <td>${fellowship.content}</td>
+                    <td>
+                        <button class="btn-primary" onclick="event.stopPropagation(); openFellowshipModal('${fellowship.id}')" style="padding: 6px 12px; font-size: 0.9em; margin-right: 5px;">수정</button>
+                        <button class="btn-primary" onclick="event.stopPropagation(); deleteFellowship('${fellowship.id}')" style="padding: 6px 12px; font-size: 0.9em; background: #e74c3c;">삭제</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        let currentDetailFellowshipId = null;
+
+        function showFellowshipDetail(fellowship) {
+            currentDetailFellowshipId = fellowship.id;
+            
+            let preparationsHTML = '';
+            if (fellowship.preparations && fellowship.preparations.length > 0) {
+                preparationsHTML = '<div style="margin-top: 15px;"><strong>준비 사항:</strong><ul style="margin-top: 10px; padding-left: 20px;">';
+                fellowship.preparations.forEach(prep => {
+                    const checked = prep.checked ? '✓' : '☐';
+                    const assignee = prep.assignee ? ` - ${prep.assignee}` : '';
+                    preparationsHTML += `<li style="margin-bottom: 8px; ${prep.checked ? 'text-decoration: line-through; color: var(--muted);' : ''}">${checked} ${prep.item}${assignee}</li>`;
+                });
+                preparationsHTML += '</ul></div>';
+            } else {
+                preparationsHTML = '<div style="margin-top: 15px; color: var(--muted);">준비 사항이 없습니다.</div>';
+            }
+            
+            document.getElementById('fellowship-detail-content').innerHTML = `
+                <div style="padding: 20px;">
+                    <h3 style="margin-bottom: 15px; color: var(--text);">부서교제 상세</h3>
+                    <table class="meeting-info-table" style="width: 100%;">
+                        <tr>
+                            <td class="label" style="width: 150px;">날짜</td>
+                            <td>${fellowship.dateStr}</td>
+                        </tr>
+                        <tr>
+                            <td class="label">교제 내용</td>
+                            <td>${fellowship.content}</td>
+                        </tr>
+                    </table>
+                    ${preparationsHTML}
+                </div>
+            `;
+            document.getElementById('fellowship-detail-modal').classList.add('active');
+        }
+
+        function editFellowshipFromDetail() {
+            if (currentDetailFellowshipId) {
+                closeFellowshipDetailModal();
+                setTimeout(() => {
+                    openFellowshipModal(currentDetailFellowshipId);
+                }, 200);
+            }
+        }
+
+        function closeFellowshipDetailModal() {
+            document.getElementById('fellowship-detail-modal').classList.remove('active');
+        }
+
+        function deleteFellowship(fellowshipId) {
+            if (!confirm('부서교제를 삭제하시겠습니까?')) return;
+            
+            // 부서교제 데이터에서 제거
+            fellowshipData = fellowshipData.filter(f => f.id !== fellowshipId);
+            saveToFirebase('fellowshipData', fellowshipData);
+            
+            // 캘린더에서도 제거
+            calendarEvents = calendarEvents.filter(e => e.fellowshipId !== fellowshipId);
+            saveToFirebase('youthCalendarEvents', calendarEvents);
+            
+            renderFellowshipTable();
+            
+            // 캘린더 다시 렌더링 (홈 화면과 섹션 화면 모두 업데이트)
+            renderCalendar();
+        }
+
+        // 캘린더 초기화 시 부서교제 데이터 로드
+        function loadFellowshipToCalendar() {
+            fellowshipData.forEach(fellowship => {
+                // 이미 캘린더에 있는지 확인
+                const exists = calendarEvents.some(e => e.fellowshipId === fellowship.id);
+                if (!exists) {
+                    const calendarEvent = {
+                        id: `fellowship_${fellowship.id}`,
+                        date: fellowship.date,
+                        title: fellowship.title,
+                        color: 'darkblue',
+                        endDate: fellowship.date,
+                        fellowshipId: fellowship.id
+                    };
+                    calendarEvents.push(calendarEvent);
+                }
+            });
+            saveToFirebase('youthCalendarEvents', calendarEvents);
+        }
+
+        // 캘린더 초기화 시 식사 준비 데이터 로드
+        function loadMealToCalendar() {
+            mealData.forEach(meal => {
+                // 이미 캘린더에 있는지 확인
+                const exists = calendarEvents.some(e => e.mealId === meal.id);
+                if (!exists) {
+                    const calendarEvent = {
+                        id: `meal_${meal.id}`,
+                        date: meal.date,
+                        title: meal.title,
+                        color: 'grey',
+                        endDate: meal.date,
+                        mealId: meal.id
+                    };
+                    calendarEvents.push(calendarEvent);
+                }
+            });
+            saveToFirebase('youthCalendarEvents', calendarEvents);
+        }
+
+        // 캘린더 초기화 시 회의록 데이터 로드
+        function loadMeetingsToCalendar() {
+            meetingLogs.forEach(meeting => {
+                // 이미 캘린더에 있는지 확인
+                const exists = calendarEvents.some(e => e.meetingId === meeting.id);
+                if (!exists) {
+                    const calendarEvent = {
+                        id: `meeting_${meeting.id}`,
+                        date: meeting.date,
+                        title: '부서 임원모임',
+                        color: 'grey',
+                        endDate: meeting.date,
+                        meetingId: meeting.id
+                    };
+                    calendarEvents.push(calendarEvent);
+                }
+            });
+            saveToFirebase('youthCalendarEvents', calendarEvents);
+        }
+
+        // 목차 순서 관리
+        const defaultNavOrder = [
+            { id: 'meeting', title: '회의록', desc: '임원모임 회의 기록' },
+            { id: 'requests', title: '회장단 요청사항', desc: '요청사항 및 교제 결과' },
+            { id: 'fellowship', title: '부서교제', desc: '부서 교제 활동' },
+            { id: 'meal', title: '식사 준비', desc: '식사 메뉴 및 장보기' },
+            { id: 'visit', title: '심방리스트', desc: '심방 대상 및 기록' }
+        ];
+
+        // localStorage에서 목차 순서 로드, 없으면 기본값 사용
+        // 기존에 저장된 순서에서 삭제된 항목(schedule, outdoor) 제거
+        let savedNavOrder = JSON.parse(localStorage.getItem('navOrder'));
+        let navOrder;
+        if (savedNavOrder) {
+            // 저장된 순서에서 schedule과 outdoor 제거
+            navOrder = savedNavOrder.filter(item => item.id !== 'schedule' && item.id !== 'outdoor');
+            // 기본값에 있는 항목만 유지
+            const defaultIds = defaultNavOrder.map(item => item.id);
+            navOrder = navOrder.filter(item => defaultIds.includes(item.id));
+            // 기본값에 있지만 저장된 순서에 없는 항목 추가
+            defaultNavOrder.forEach(defaultItem => {
+                if (!navOrder.find(item => item.id === defaultItem.id)) {
+                    navOrder.push(defaultItem);
+                }
+            });
+            // 기본값 순서대로 정렬
+            navOrder.sort((a, b) => {
+                const indexA = defaultNavOrder.findIndex(item => item.id === a.id);
+                const indexB = defaultNavOrder.findIndex(item => item.id === b.id);
+                return indexA - indexB;
+            });
+        } else {
+            navOrder = defaultNavOrder;
+        }
+
+        function renderNavButtons() {
+            const grid = document.getElementById('nav-button-grid');
+            if (!grid) return;
+            
+            grid.innerHTML = '';
+            
+            navOrder.forEach((item, index) => {
+                const button = document.createElement('div');
+                button.className = 'nav-button';
+                button.draggable = true;
+                button.dataset.sectionId = item.id;
+                button.dataset.index = index;
+                
+                button.innerHTML = `
+                    <h3>${item.title}</h3>
+                    <p>${item.desc}</p>
+                `;
+                
+                button.onclick = () => showSection(item.id);
+                
+                // 드래그 이벤트
+                button.addEventListener('dragstart', handleNavDragStart);
+                button.addEventListener('dragover', handleNavDragOver);
+                button.addEventListener('drop', handleNavDrop);
+                button.addEventListener('dragend', handleNavDragEnd);
+                button.addEventListener('dragleave', handleNavDragLeave);
+                
+                grid.appendChild(button);
+            });
+        }
+
+        let draggedNavButton = null;
+
+        function handleNavDragStart(e) {
+            draggedNavButton = e.target;
+            e.target.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleNavDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            if (e.target.classList.contains('nav-button') && e.target !== draggedNavButton) {
+                e.target.classList.add('drag-over');
+            }
+        }
+
+        function handleNavDragLeave(e) {
+            e.target.classList.remove('drag-over');
+        }
+
+        function handleNavDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            if (draggedNavButton && e.target.classList.contains('nav-button') && e.target !== draggedNavButton) {
+                const draggedIndex = parseInt(draggedNavButton.dataset.index);
+                const targetIndex = parseInt(e.target.dataset.index);
+                
+                // 배열에서 요소 이동
+                const [movedItem] = navOrder.splice(draggedIndex, 1);
+                navOrder.splice(targetIndex, 0, movedItem);
+                
+                // localStorage에 저장
+                saveToFirebase('navOrder', navOrder);
+                
+                // 다시 렌더링
+                renderNavButtons();
+            }
+            
+            e.target.classList.remove('drag-over');
+        }
+
+        function handleNavDragEnd(e) {
+            e.target.classList.remove('dragging');
+            document.querySelectorAll('.nav-button').forEach(btn => {
+                btn.classList.remove('drag-over');
+            });
+            draggedNavButton = null;
+        }
+
+        // Initialize - Firebase 데이터 로드
+        async function initializeData() {
+            // Firebase 또는 localStorage에서 데이터 로드
+            calendarEvents = await loadFromFirebase('youthCalendarEvents', []);
+            meetingLogs = await loadFromFirebase('youthMeetingLogs', []);
+            visitData = await loadFromFirebase('visitData', {});
+            fellowshipData = await loadFromFirebase('fellowshipData', []);
+            mealData = await loadFromFirebase('mealData', []);
+            
+            // 초기 부서교제 데이터 (1/17 자기소개) - 데이터가 없을 때만 추가
+            if (fellowshipData.length === 0) {
+                fellowshipData.push({
+                    id: 'initial_1',
+                    date: '2026-01-17',
+                    dateStr: '1/17',
+                    content: '자기소개',
+                    title: '부서교제 - 자기소개'
+                });
+                await saveToFirebase('fellowshipData', fellowshipData);
+            }
+            
+            // 참석자 목록 로드
+            const storedParticipants = await loadFromFirebase('youthParticipantsList', null);
+            if (storedParticipants) {
+                participantsList = storedParticipants;
+            }
+            
+            // 네비게이션 순서 로드
+            const storedNavOrder = await loadFromFirebase('navOrder', null);
+            if (storedNavOrder) {
+                navOrder = storedNavOrder;
+            }
+            
+            // 데이터 마이그레이션 (기존 visitDates를 visitData로 변환)
+            await migrateVisitData();
+            
+            // Firebase에서 로드한 visitData를 캘린더에 반영
+            syncVisitDataToCalendar();
+            
+            // 캘린더에 데이터 로드
+            loadFellowshipToCalendar();
+            loadMealToCalendar();
+            loadMeetingsToCalendar();
+            
+            // UI 렌더링
+            renderMeetingTable();
+            renderVisitList();
+            renderFellowshipTable();
+            renderMealTable();
+            renderRequestsTable();
+            
+            // 초기 캘린더 렌더링 (홈 화면에 표시)
+            renderCalendar();
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async function() {
+            // 목차 버튼 렌더링
+            renderNavButtons();
+            
+            // 데이터 초기화 및 로드
+            await initializeData();
+        });
+    </script>
+</body>
+</html>
+

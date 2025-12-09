@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>데이터 마이그레이션 도구</title>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <style>
+        body {
+            font-family: 'Malgun Gothic', sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            background: #f9f9f9;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📦 데이터 마이그레이션 도구</h1>
+        
+        <div class="info">
+            <strong>사용 방법:</strong><br>
+            1. 이전에 사용하던 브라우저에서 이 페이지를 엽니다<br>
+            2. "localStorage 데이터 확인" 버튼 클릭<br>
+            3. 데이터가 있으면 "Firebase로 마이그레이션" 버튼 클릭<br>
+            4. 완료!
+        </div>
+
+        <button onclick="checkLocalStorage()">localStorage 데이터 확인</button>
+        <button onclick="migrateToFirebase()">Firebase로 마이그레이션</button>
+        <button onclick="clearLocalStorage()">localStorage 비우기 (마이그레이션 후)</button>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        // Firebase 설정 (Hana_council.html과 동일)
+        const firebaseConfig = {
+            apiKey: "AIzaSyALDK7sAJx32ZJt75osEAPIGXmmmH_MI2c",
+            authDomain: "team-hana.firebaseapp.com",
+            projectId: "team-hana",
+            storageBucket: "team-hana.firebasestorage.app",
+            messagingSenderId: "1088617617940",
+            appId: "1:1088617617940:web:29a69f3b78b89e9ad4a501"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        const collections = [
+            'youthCalendarEvents',
+            'youthMeetingLogs',
+            'visitData',
+            'fellowshipData',
+            'mealData',
+            'youthParticipantsList',
+            'navOrder'
+        ];
+
+        function showResult(message, isSuccess = true) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = 'result ' + (isSuccess ? 'success' : 'error');
+            resultDiv.innerHTML = message;
+        }
+
+        function checkLocalStorage() {
+            let found = [];
+            let notFound = [];
+
+            collections.forEach(collection => {
+                const data = localStorage.getItem(collection);
+                if (data) {
+                    try {
+                        const parsed = JSON.parse(data);
+                        found.push(`${collection}: ${JSON.stringify(parsed).length} bytes`);
+                    } catch (e) {
+                        found.push(`${collection}: (파싱 오류)`);
+                    }
+                } else {
+                    notFound.push(collection);
+                }
+            });
+
+            let message = '<h3>localStorage 데이터 확인 결과</h3>';
+            if (found.length > 0) {
+                message += '<strong>발견된 데이터:</strong><ul>';
+                found.forEach(item => {
+                    message += `<li>${item}</li>`;
+                });
+                message += '</ul>';
+            } else {
+                message += '<p>localStorage에 데이터가 없습니다.</p>';
+            }
+
+            if (notFound.length > 0 && found.length > 0) {
+                message += '<strong>데이터 없음:</strong><ul>';
+                notFound.forEach(item => {
+                    message += `<li>${item}</li>`;
+                });
+                message += '</ul>';
+            }
+
+            showResult(message, found.length > 0);
+        }
+
+        async function migrateToFirebase() {
+            showResult('마이그레이션 시작...', true);
+            
+            let migrated = 0;
+            let errors = [];
+
+            for (const collection of collections) {
+                const data = localStorage.getItem(collection);
+                if (data) {
+                    try {
+                        const parsed = JSON.parse(data);
+                        await db.collection('appData').doc(collection).set({
+                            data: parsed,
+                            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                            migrated: true
+                        });
+                        migrated++;
+                    } catch (error) {
+                        errors.push(`${collection}: ${error.message}`);
+                    }
+                }
+            }
+
+            let message = '<h3>마이그레이션 완료</h3>';
+            message += `<p><strong>${migrated}개</strong> 컬렉션을 Firebase로 마이그레이션했습니다.</p>`;
+            
+            if (errors.length > 0) {
+                message += '<strong>오류:</strong><ul>';
+                errors.forEach(error => {
+                    message += `<li>${error}</li>`;
+                });
+                message += '</ul>';
+            } else {
+                message += '<p>✅ 모든 데이터가 성공적으로 마이그레이션되었습니다!</p>';
+                message += '<p>이제 https://team-hana.web.app 에서 데이터를 확인할 수 있습니다.</p>';
+            }
+
+            showResult(message, errors.length === 0);
+        }
+
+        function clearLocalStorage() {
+            if (confirm('정말 localStorage의 모든 데이터를 삭제하시겠습니까? (Firebase로 마이그레이션한 후에만 실행하세요)')) {
+                collections.forEach(collection => {
+                    localStorage.removeItem(collection);
+                });
+                showResult('localStorage가 비워졌습니다.', true);
+            }
+        }
+    </script>
+</body>
+</html>
+
