@@ -6,6 +6,8 @@
     <title>하나부 임원</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- html2canvas for image export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
@@ -262,25 +264,32 @@
                 font-size: 1em;
             }
 
-            #calendar-grid,
-            #calendar-grid-home {
-                gap: 4px;
-                padding: 8px;
-            }
+        #calendar-grid,
+        #calendar-grid-home {
+            gap: 4px;
+            padding: 8px;
+            width: 100%;
+            box-sizing: border-box;
+        }
 
             .calendar-day {
-                padding: 4px;
+                padding: 5px;
                 font-size: 0.8em;
+                min-height: 70px;
+                aspect-ratio: auto;
             }
 
             .calendar-day-number {
-                font-size: 0.85em;
+                font-size: 0.9em;
+                margin-bottom: 4px;
             }
 
             .calendar-event {
-                font-size: 0.6em;
-                padding: 1px 2px;
-                margin: 0.5px 0;
+                font-size: 0.7em;
+                padding: 3px 4px;
+                margin: 2px 0;
+                min-height: 18px;
+                line-height: 1.4;
             }
 
             .calendar-day-header {
@@ -372,17 +381,23 @@
             }
 
             .calendar-day {
-                padding: 3px;
+                padding: 4px;
                 font-size: 0.75em;
+                min-height: 60px;
             }
 
             .calendar-day-number {
-                font-size: 0.8em;
+                font-size: 0.85em;
+                margin-bottom: 4px;
             }
 
             .calendar-event {
-                font-size: 0.55em;
-                padding: 1px;
+                font-size: 0.65em;
+                padding: 3px 4px;
+                margin: 2px 0;
+                min-height: 16px;
+                line-height: 1.4;
+                font-weight: 500;
             }
 
             .calendar-day-header {
@@ -488,6 +503,21 @@
             font-size: 0.9em;
             display: flex;
             flex-direction: column;
+            min-height: 80px;
+        }
+
+        @media (max-width: 768px) {
+            .calendar-day {
+                aspect-ratio: auto;
+                min-height: 70px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .calendar-day {
+                aspect-ratio: auto;
+                min-height: 60px;
+            }
         }
 
         .calendar-day:hover {
@@ -856,7 +886,8 @@
                 <div style="margin-bottom: 20px;">
                     <input type="file" id="excel-upload-home" accept=".xlsx,.xls" style="display: none;" onchange="handleExcelUpload(event)">
                     <button class="btn-primary" onclick="document.getElementById('excel-upload-home').click()">📁 엑셀 파일 업로드</button>
-                    <span style="margin-left: 15px; color: var(--muted); font-size: 0.9em;">* Excel 파일로 일정을 업데이트할 수 있습니다</span>
+                    <button class="btn-primary" onclick="copyCalendarAsImageHome()" style="background: #12b886;">📷 달력 이미지 복사 (심방 제외)</button>
+                    <span style="color: var(--muted); font-size: 0.9em;">* Excel 파일로 일정을 업데이트할 수 있습니다</span>
                 </div>
                 <div id="calendar-wrapper-home">
                     <div class="calendar-header">
@@ -872,10 +903,12 @@
         <!-- 부서 월간 일정 섹션 -->
         <div id="schedule" class="content-section">
             <h2>부서 월간 일정</h2>
-            <div style="margin-bottom: 20px;">
+            <div style="margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
                 <input type="file" id="excel-upload" accept=".xlsx,.xls" style="display: none;" onchange="handleExcelUpload(event)">
                 <button class="btn-primary" onclick="document.getElementById('excel-upload').click()">📁 엑셀 파일 업로드</button>
-                <span style="margin-left: 15px; color: var(--muted); font-size: 0.9em;">* Excel 파일로 일정을 업데이트할 수 있습니다</span>
+                <button class="btn-primary" onclick="copyEventsToNextMonth()" style="background: var(--accent);">📅 다음달 복사 (같은 요일)</button>
+                <button class="btn-primary" onclick="copyCalendarAsImage()" style="background: #12b886;">📷 달력 이미지 복사 (심방 제외)</button>
+                <span style="color: var(--muted); font-size: 0.9em;">* Excel 파일로 일정을 업데이트할 수 있습니다</span>
             </div>
             <div id="calendar-wrapper">
                 <div class="calendar-header">
@@ -1480,11 +1513,21 @@
 
         function renderEventsForDay(dayEl, dateStr) {
             // 해당 날짜에 속한 모든 이벤트 찾기 (시작일이거나 범위 내 날짜)
-            const events = calendarEvents.filter(e => {
+            let events = calendarEvents.filter(e => {
                 if (!e.endDate || e.endDate === e.date) {
                     return e.date === dateStr;
                 }
                 return isDateInRange(dateStr, e.date, e.endDate);
+            });
+            
+            // 정렬: 연속일정(isMultiDay 또는 endDate !== date)이 가장 위에 오도록
+            events.sort((a, b) => {
+                const aIsMultiDay = a.isMultiDay || (a.endDate && a.endDate !== a.date);
+                const bIsMultiDay = b.isMultiDay || (b.endDate && b.endDate !== b.date);
+                
+                if (aIsMultiDay && !bIsMultiDay) return -1; // a가 연속일정이면 위로
+                if (!aIsMultiDay && bIsMultiDay) return 1;  // b가 연속일정이면 위로
+                return 0; // 둘 다 같으면 순서 유지
             });
             
             events.forEach(event => {
@@ -1720,16 +1763,47 @@
         }
 
         function addEventToDate(dateStr) {
-            const title = prompt('일정 제목을 입력하세요:');
+            const title = prompt('일정 제목을 입력하세요:\n연속 일정은 "제목(시작일-종료일)" 형식으로 입력하세요.\n예: 동계수련회(26-28)');
             if (title && title.trim()) {
-                const color = prompt('색상을 입력하세요 (yellow/grey/blue/darkblue/orange/pink/green/brightyellow):') || 'blue';
+                // 연속 일정 형식 확인: 제목(시작일-종료일)
+                const rangeMatch = title.trim().match(/^(.+?)\((\d+)-(\d+)\)$/);
+                
+                let startDate = dateStr;
+                let endDate = dateStr;
+                let eventTitle = title.trim();
+                let color = 'blue';
+                
+                if (rangeMatch) {
+                    // 연속 일정 형식
+                    eventTitle = rangeMatch[1]; // 제목 부분
+                    const startDay = parseInt(rangeMatch[2]);
+                    const endDay = parseInt(rangeMatch[3]);
+                    
+                    // 현재 날짜에서 연도와 월 추출
+                    const dateParts = dateStr.split('-');
+                    const year = parseInt(dateParts[0]);
+                    const month = parseInt(dateParts[1]);
+                    
+                    // 시작일과 종료일 계산
+                    startDate = `${year}-${String(month).padStart(2, '0')}-${String(startDay).padStart(2, '0')}`;
+                    endDate = `${year}-${String(month).padStart(2, '0')}-${String(endDay).padStart(2, '0')}`;
+                    
+                    // 연속 일정은 darkblue 색상, 흰색 글씨
+                    color = 'darkblue';
+                    eventTitle = `${eventTitle}(${startDay}-${endDay})`;
+                } else {
+                    // 일반 일정
+                    color = prompt('색상을 입력하세요 (yellow/grey/blue/darkblue/orange/pink/green/brightyellow):') || 'blue';
+                }
+                
                 const newEvent = {
                     id: Date.now().toString(),
-                    date: dateStr,
-                    title: title.trim(),
+                    date: startDate,
+                    title: eventTitle,
                     color: color,
-                    endDate: dateStr,
-                    description: ''
+                    endDate: endDate,
+                    description: '',
+                    isMultiDay: rangeMatch ? true : false
                 };
                 calendarEvents.push(newEvent);
                 saveToFirebase('youthCalendarEvents', calendarEvents);
@@ -3480,6 +3554,185 @@
                 btn.classList.remove('drag-over');
             });
             draggedNavButton = null;
+        }
+
+        // 다음달 복사 기능: 같은 주 같은 요일로 복사
+        function copyEventsToNextMonth() {
+            const currentYear = currentCalendarDate.getFullYear();
+            const currentMonth = currentCalendarDate.getMonth();
+            
+            // 다음달 계산
+            const nextMonth = currentMonth === 11 ? 0 : currentMonth + 1;
+            const nextYear = currentMonth === 11 ? currentYear + 1 : currentYear;
+            
+            // 복사할 이벤트 필터링 (목차와 연동되지 않은 일정만)
+            const eventsToCopy = calendarEvents.filter(event => {
+                // 심방일정 제외
+                if (event.visitName || event.title.match(/심방$/)) {
+                    return false;
+                }
+                // 부서임원모임 제외
+                if (event.meetingId || event.title === '부서 임원모임') {
+                    return false;
+                }
+                // 식사준비 제외
+                if (event.mealId || event.title.match(/^식사 준비/)) {
+                    return false;
+                }
+                // 부서교제 제외
+                if (event.fellowshipId || event.title.match(/^부서교제/)) {
+                    return false;
+                }
+                // 현재 월의 이벤트만
+                const eventDate = new Date(event.date);
+                return eventDate.getFullYear() === currentYear && eventDate.getMonth() === currentMonth;
+            });
+            
+            if (eventsToCopy.length === 0) {
+                alert('복사할 일정이 없습니다.');
+                return;
+            }
+            
+            if (!confirm(`${eventsToCopy.length}개의 일정을 다음달로 복사하시겠습니까?\n(같은 주, 같은 요일로 복사됩니다)`)) {
+                return;
+            }
+            
+            const newEvents = [];
+            
+            eventsToCopy.forEach(event => {
+                const eventDate = new Date(event.date);
+                const eventDayOfWeek = eventDate.getDay(); // 요일 (0=일요일, 6=토요일)
+                const weekOfMonth = Math.floor((eventDate.getDate() - 1) / 7); // 몇 번째 주인지
+                
+                // 다음달의 같은 주, 같은 요일 계산
+                const firstDayOfNextMonth = new Date(nextYear, nextMonth, 1);
+                const firstDayOfWeek = firstDayOfNextMonth.getDay();
+                
+                // 첫 번째 주의 같은 요일 찾기
+                let dayOffset = eventDayOfWeek - firstDayOfWeek;
+                if (dayOffset < 0) dayOffset += 7;
+                
+                const targetDay = 1 + dayOffset + (weekOfMonth * 7);
+                
+                // 다음달의 마지막 날 확인
+                const lastDayOfNextMonth = new Date(nextYear, nextMonth + 1, 0).getDate();
+                
+                if (targetDay <= lastDayOfNextMonth) {
+                    const newDate = new Date(nextYear, nextMonth, targetDay);
+                    const newDateStr = formatDateForCalendar(newDate);
+                    
+                    // 종료일도 계산 (연속일정인 경우)
+                    let newEndDateStr = newDateStr;
+                    if (event.endDate && event.endDate !== event.date) {
+                        const endDate = new Date(event.endDate);
+                        const daysDiff = Math.floor((endDate - eventDate) / (1000 * 60 * 60 * 24));
+                        const newEndDate = new Date(newDate);
+                        newEndDate.setDate(newEndDate.getDate() + daysDiff);
+                        newEndDateStr = formatDateForCalendar(newEndDate);
+                    }
+                    
+                    // 새 이벤트 생성
+                    const newEvent = {
+                        id: Date.now().toString() + '_' + Math.random(),
+                        date: newDateStr,
+                        title: event.title,
+                        color: event.color,
+                        endDate: newEndDateStr,
+                        description: event.description || '',
+                        isMultiDay: event.isMultiDay || (event.endDate && event.endDate !== event.date)
+                    };
+                    
+                    newEvents.push(newEvent);
+                }
+            });
+            
+            if (newEvents.length > 0) {
+                calendarEvents = calendarEvents.concat(newEvents);
+                saveToFirebase('youthCalendarEvents', calendarEvents);
+                alert(`${newEvents.length}개의 일정이 다음달로 복사되었습니다.`);
+                renderCalendar();
+            } else {
+                alert('복사할 수 있는 일정이 없습니다.');
+            }
+        }
+
+        // 달력을 이미지로 복사 (심방일정 제외) - 섹션 화면용
+        async function copyCalendarAsImage() {
+            const calendarGrid = document.getElementById('calendar-grid');
+            if (!calendarGrid) {
+                alert('캘린더를 찾을 수 없습니다.');
+                return;
+            }
+            await copyCalendarAsImageFromElement(calendarGrid);
+        }
+
+        // 달력을 이미지로 복사 (심방일정 제외) - 홈 화면용
+        async function copyCalendarAsImageHome() {
+            const calendarGrid = document.getElementById('calendar-grid-home');
+            if (!calendarGrid) {
+                alert('캘린더를 찾을 수 없습니다.');
+                return;
+            }
+            await copyCalendarAsImageFromElement(calendarGrid);
+        }
+
+        // 공통 이미지 복사 함수
+        async function copyCalendarAsImageFromElement(calendarGrid) {
+
+            // 심방 일정 숨기기
+            const visitEvents = calendarGrid.querySelectorAll('.calendar-event');
+            const hiddenEvents = [];
+            visitEvents.forEach(eventEl => {
+                const eventId = eventEl.dataset.eventId;
+                const event = calendarEvents.find(e => e.id === eventId);
+                if (event && (event.visitName || event.title.match(/심방$/))) {
+                    eventEl.style.display = 'none';
+                    hiddenEvents.push(eventEl);
+                }
+            });
+
+            try {
+                // html2canvas로 이미지 생성
+                const canvas = await html2canvas(calendarGrid, {
+                    backgroundColor: '#ffffff',
+                    scale: 2,
+                    logging: false,
+                    useCORS: true
+                });
+
+                // Canvas를 Blob으로 변환
+                canvas.toBlob((blob) => {
+                    if (!blob) {
+                        alert('이미지 생성에 실패했습니다.');
+                        return;
+                    }
+
+                    // Clipboard API로 복사
+                    navigator.clipboard.write([
+                        new ClipboardItem({ 'image/png': blob })
+                    ]).then(() => {
+                        alert('달력 이미지가 클립보드에 복사되었습니다!\n카카오톡에서 붙여넣기(Ctrl+V)로 공유하세요.');
+                    }).catch((err) => {
+                        // Clipboard API가 지원되지 않는 경우 대체 방법
+                        const url = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = `달력_${new Date().getFullYear()}_${new Date().getMonth() + 1}.png`;
+                        link.click();
+                        URL.revokeObjectURL(url);
+                        alert('이미지가 다운로드되었습니다.');
+                    });
+                }, 'image/png');
+
+            } catch (error) {
+                console.error('이미지 생성 오류:', error);
+                alert('이미지 생성 중 오류가 발생했습니다.');
+            } finally {
+                // 숨긴 이벤트 다시 표시
+                hiddenEvents.forEach(eventEl => {
+                    eventEl.style.display = '';
+                });
+            }
         }
 
         // Initialize - Firebase 데이터 로드

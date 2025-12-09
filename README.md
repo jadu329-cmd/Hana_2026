@@ -33,59 +33,40 @@
 
 ### Git 사용 (코드 버전 관리)
 
-#### 처음 설정하기
-```powershell
-# Git 저장소 초기화 및 GitHub 연결
-.\setup-git-auto.ps1
-```
-
-#### 코드 수정 후 Git에 저장하기
-Cursor에서 파일을 수정한 후, PowerShell에서:
-```powershell
-# 자동 커밋 및 푸시 (확인 없이)
-.\auto-commit-push.ps1
-
-# 또는 커밋 메시지 지정
-.\auto-commit-push.ps1 "심방리스트 수정"
-
-# 확인 후 푸시 (안전)
-.\auto-commit.ps1 "수정 내용"
-```
+#### GitHub Desktop 사용 (권장)
+1. Cursor에서 파일 수정
+2. GitHub Desktop에서 변경사항 확인
+3. 커밋 메시지 입력
+4. "Commit to main" 클릭
+5. "Push origin" 클릭
 
 #### 다른 컴퓨터에서 코드 가져오기
-```powershell
-# Git 저장소 클론
-git clone YOUR_REPO_URL
-
-# 또는 기존 폴더에서 업데이트
-git pull
-```
+1. GitHub Desktop 설치 및 로그인
+2. "File" → "Clone Repository"
+3. `jadu329-cmd/Hana_2026` 선택
+4. Clone
 
 ### 배포
 코드 수정 후 배포:
-```powershell
-.\deploy.ps1
+```cmd
+deploy.bat
 ```
-또는
-```powershell
-firebase deploy --only hosting
-```
+또는 파일 탐색기에서 `deploy.bat` 파일 더블클릭
 
 ## 프로젝트 구조
 
 ```
-HTML/
-├── Hana_council.html       # 메인 애플리케이션
-├── deploy.ps1             # 배포 스크립트
-├── setup-git-auto.ps1     # Git 초기화 스크립트
-├── auto-commit-push.ps1   # 자동 커밋 및 푸시 스크립트
-├── auto-commit.ps1        # 자동 커밋 스크립트 (확인 후 푸시)
+HANA/
+├── Hana_council.html      # 메인 애플리케이션
+├── deploy.bat             # 배포 스크립트 (더블클릭으로 실행)
+├── deploy.ps1             # 배포 스크립트 (PowerShell용)
 ├── firebase.json          # Firebase 호스팅 설정
 ├── .firebaserc            # Firebase 프로젝트 설정
 ├── firestore.rules        # Firestore 보안 규칙
 ├── firestore.indexes.json # Firestore 인덱스
 ├── .gitignore             # Git 제외 파일
-└── README.md              # 프로젝트 문서
+├── README.md              # 프로젝트 문서
+└── archive/               # 보관 파일들
 ```
 
 ## 데이터 저장
