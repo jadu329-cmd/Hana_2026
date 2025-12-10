@@ -270,10 +270,12 @@
             padding: 8px;
             width: 100%;
             box-sizing: border-box;
+            overflow-x: visible;
         }
 
             .calendar-day {
                 padding: 5px;
+                overflow: visible;
                 font-size: 0.8em;
                 min-height: 70px;
                 aspect-ratio: auto;
@@ -392,12 +394,15 @@
             }
 
             .calendar-event {
-                font-size: 0.65em;
-                padding: 3px 4px;
+                font-size: 0.7em;
+                padding: 4px 5px;
                 margin: 2px 0;
-                min-height: 16px;
+                min-height: 18px;
                 line-height: 1.4;
                 font-weight: 500;
+                display: block;
+                visibility: visible;
+                opacity: 1;
             }
 
             .calendar-day-header {
@@ -509,14 +514,25 @@
         @media (max-width: 768px) {
             .calendar-day {
                 aspect-ratio: auto;
-                min-height: 70px;
+                min-height: 80px;
+                overflow: visible;
+            }
+            
+            .calendar-event {
+                font-size: 0.7em;
+                padding: 3px 4px;
+                min-height: 18px;
+                display: block;
+                visibility: visible;
+                opacity: 1;
             }
         }
 
         @media (max-width: 480px) {
             .calendar-day {
                 aspect-ratio: auto;
-                min-height: 60px;
+                min-height: 70px;
+                overflow: visible;
             }
         }
 
@@ -577,6 +593,9 @@
             position: relative;
             z-index: 1;
             line-height: 1.3;
+            display: block;
+            visibility: visible;
+            opacity: 1;
         }
 
         .calendar-event:hover {
@@ -887,6 +906,7 @@
                     <input type="file" id="excel-upload-home" accept=".xlsx,.xls" style="display: none;" onchange="handleExcelUpload(event)">
                     <button class="btn-primary" onclick="document.getElementById('excel-upload-home').click()">📁 엑셀 파일 업로드</button>
                     <button class="btn-primary" onclick="copyCalendarAsImageHome()" style="background: #12b886;">📷 달력 이미지 복사 (심방/임원모임 제외)</button>
+                    <button class="btn-primary" onclick="syncLocalDataToFirebase()" style="background: #ff6b6b;">🔄 로컬 데이터 동기화</button>
                     <span style="color: var(--muted); font-size: 0.9em;">* Excel 파일로 일정을 업데이트할 수 있습니다</span>
                 </div>
                 <div id="calendar-wrapper-home">
@@ -909,6 +929,7 @@
                 <button class="btn-primary" onclick="copyEventsToPrevMonth()" style="background: var(--accent);">📅 전월 복사 (같은 요일)</button>
                 <button class="btn-primary" onclick="copyEventsToNextMonth()" style="background: var(--accent);">📅 다음달 복사 (같은 요일)</button>
                 <button class="btn-primary" onclick="copyCalendarAsImage()" style="background: #12b886;">📷 달력 이미지 복사 (심방/임원모임 제외)</button>
+                <button class="btn-primary" onclick="syncLocalDataToFirebase()" style="background: #ff6b6b;">🔄 로컬 데이터 동기화</button>
                 <span style="color: var(--muted); font-size: 0.9em;">* Excel 파일로 일정을 업데이트할 수 있습니다</span>
             </div>
             <div id="calendar-wrapper">
@@ -1513,6 +1534,10 @@
         }
 
         function renderEventsForDay(dayEl, dateStr) {
+            // 기존 이벤트 제거 (중복 방지)
+            const existingEvents = dayEl.querySelectorAll('.calendar-event');
+            existingEvents.forEach(el => el.remove());
+            
             // 해당 날짜에 속한 모든 이벤트 찾기 (시작일이거나 범위 내 날짜)
             let events = calendarEvents.filter(e => {
                 if (!e.endDate || e.endDate === e.date) {
@@ -1531,6 +1556,14 @@
                 return 0; // 둘 다 같으면 순서 유지
             });
             
+            // 이벤트 컨테이너 생성 또는 가져오기
+            let eventsContainer = dayEl.querySelector('.calendar-events-container');
+            if (!eventsContainer) {
+                eventsContainer = document.createElement('div');
+                eventsContainer.className = 'calendar-events-container';
+                dayEl.appendChild(eventsContainer);
+            }
+            
             events.forEach(event => {
                 const eventEl = document.createElement('div');
                 eventEl.className = 'calendar-event';
@@ -1540,13 +1573,19 @@
                     eventEl.classList.add(`event-${event.color}`);
                 }
                 
-                // 모든 날짜에 제목 표시
-                eventEl.textContent = event.title.length > 20 ? event.title.substring(0, 20) + '...' : event.title;
+                // 모든 날짜에 제목 표시 (모바일에서도 잘 보이도록)
+                const maxLength = window.innerWidth <= 480 ? 15 : 20;
+                eventEl.textContent = event.title.length > maxLength ? event.title.substring(0, maxLength) + '...' : event.title;
                 
                 eventEl.draggable = true;
                 eventEl.title = event.title;
                 eventEl.dataset.eventId = event.id;
                 eventEl.dataset.date = dateStr;
+                
+                // 모바일에서도 확실히 보이도록 스타일 강제
+                eventEl.style.display = 'block';
+                eventEl.style.visibility = 'visible';
+                eventEl.style.opacity = '1';
                 
                 eventEl.addEventListener('dragstart', handleDragStart);
                 eventEl.addEventListener('dragend', handleDragEnd);
@@ -1593,7 +1632,7 @@
                     }
                 });
                 
-                dayEl.appendChild(eventEl);
+                eventsContainer.appendChild(eventEl);
             });
         }
 
@@ -3860,6 +3899,92 @@
             }
         }
 
+        // 로컬 데이터를 Firebase에 강제 동기화하는 함수
+        async function syncLocalDataToFirebase() {
+            if (!USE_FIREBASE || !db) {
+                alert('Firebase가 활성화되지 않았습니다.');
+                return;
+            }
+            
+            try {
+                // localStorage에서 데이터 로드
+                const localCalendarEvents = localStorage.getItem('youthCalendarEvents');
+                const localMeetingLogs = localStorage.getItem('youthMeetingLogs');
+                const localVisitData = localStorage.getItem('visitData');
+                const localFellowshipData = localStorage.getItem('fellowshipData');
+                const localMealData = localStorage.getItem('mealData');
+                
+                let synced = false;
+                
+                // 각 데이터가 있으면 Firebase에 저장
+                if (localCalendarEvents) {
+                    const data = JSON.parse(localCalendarEvents);
+                    // 기존 Firebase 데이터와 병합 (중복 제거)
+                    const existingEvents = await loadFromFirebase('youthCalendarEvents', []);
+                    const existingIds = new Set(existingEvents.map(e => e.id));
+                    const newEvents = data.filter(e => !existingIds.has(e.id));
+                    calendarEvents = [...existingEvents, ...newEvents];
+                    await saveToFirebase('youthCalendarEvents', calendarEvents);
+                    synced = true;
+                } else {
+                    // localStorage에 데이터가 없으면 현재 calendarEvents를 Firebase에 저장
+                    if (calendarEvents.length > 0) {
+                        await saveToFirebase('youthCalendarEvents', calendarEvents);
+                        synced = true;
+                    }
+                }
+                
+                if (localMeetingLogs) {
+                    const data = JSON.parse(localMeetingLogs);
+                    await saveToFirebase('youthMeetingLogs', data);
+                    meetingLogs = data;
+                    synced = true;
+                }
+                
+                if (localVisitData) {
+                    const data = JSON.parse(localVisitData);
+                    await saveToFirebase('visitData', data);
+                    visitData = data;
+                    synced = true;
+                }
+                
+                if (localFellowshipData) {
+                    const data = JSON.parse(localFellowshipData);
+                    await saveToFirebase('fellowshipData', data);
+                    fellowshipData = data;
+                    synced = true;
+                }
+                
+                if (localMealData) {
+                    const data = JSON.parse(localMealData);
+                    await saveToFirebase('mealData', data);
+                    mealData = data;
+                    synced = true;
+                }
+                
+                if (synced) {
+                    // 데이터 동기화 후 UI 업데이트
+                    syncVisitDataToCalendar();
+                    loadFellowshipToCalendar();
+                    loadMealToCalendar();
+                    loadMeetingsToCalendar();
+                    renderCalendar();
+                    renderMeetingTable();
+                    renderVisitList();
+                    renderFellowshipTable();
+                    renderMealTable();
+                    renderRequestsTable();
+                    
+                    alert('로컬 데이터가 Firebase에 동기화되었습니다!');
+                } else {
+                    alert('동기화할 로컬 데이터가 없습니다.');
+                }
+            } catch (error) {
+                console.error('동기화 오류:', error);
+                alert('동기화 중 오류가 발생했습니다: ' + error.message);
+            }
+        }
+
         // Initialize - Firebase 데이터 로드
         async function initializeData() {
             // Firebase 또는 localStorage에서 데이터 로드
@@ -3868,6 +3993,49 @@
             visitData = await loadFromFirebase('visitData', {});
             fellowshipData = await loadFromFirebase('fellowshipData', []);
             mealData = await loadFromFirebase('mealData', []);
+            
+            // Firebase와 localStorage 모두에 데이터가 없으면 11월 초기 데이터 추가
+            if (calendarEvents.length === 0) {
+                const localCalendarEvents = localStorage.getItem('youthCalendarEvents');
+                if (!localCalendarEvents) {
+                    // 11월 초기 일정 데이터
+                    const novemberEvents = [
+                        { id: 'nov_1', date: '2025-11-01', title: '대학부 15:00~16:30 전p', color: 'yellow', endDate: '2025-11-01' },
+                        { id: 'nov_2', date: '2025-11-01', title: '청년회', color: 'yellow', endDate: '2025-11-01' },
+                        { id: 'nov_3', date: '2025-11-02', title: '전체 임원모임', color: 'grey', endDate: '2025-11-02' },
+                        { id: 'nov_4', date: '2025-11-02', title: '전국청년임원수련회', color: 'grey', endDate: '2025-11-02' },
+                        { id: 'nov_5', date: '2025-11-04', title: '구역 : 22윤', color: 'blue', endDate: '2025-11-04' },
+                        { id: 'nov_6', date: '2025-11-05', title: '청년 캔버라 수련회 (5-11)', color: 'darkblue', endDate: '2025-11-11', isMultiDay: true },
+                        { id: 'nov_7', date: '2025-11-06', title: '구역 : 24윤', color: 'blue', endDate: '2025-11-06' },
+                        { id: 'nov_8', date: '2025-11-07', title: '구역 : 11 13전', color: 'blue', endDate: '2025-11-07' },
+                        { id: 'nov_9', date: '2025-11-08', title: '봉/청 질의응답 윤p', color: 'orange', endDate: '2025-11-08' },
+                        { id: 'nov_10', date: '2025-11-09', title: '청년회 묵상모임', color: 'pink', endDate: '2025-11-09' },
+                        { id: 'nov_11', date: '2025-11-13', title: '구역 : 14전', color: 'blue', endDate: '2025-11-13' },
+                        { id: 'nov_12', date: '2025-11-14', title: '구역 : 12전 21윤', color: 'blue', endDate: '2025-11-14' },
+                        { id: 'nov_13', date: '2025-11-15', title: '결혼식', color: 'green', endDate: '2025-11-15' },
+                        { id: 'nov_14', date: '2025-11-15', title: '청/봉 질의응답 전p', color: 'orange', endDate: '2025-11-15' },
+                        { id: 'nov_15', date: '2025-11-16', title: '청년회장단', color: 'grey', endDate: '2025-11-16' },
+                        { id: 'nov_16', date: '2025-11-16', title: '갈릴리8', color: 'pink', endDate: '2025-11-16' },
+                        { id: 'nov_17', date: '2025-11-17', title: '대전도집회 (17-23) - 임승환 목사(광주송정)', color: 'brightyellow', endDate: '2025-11-23', isMultiDay: true },
+                        { id: 'nov_18', date: '2025-11-23', title: '청년회장단', color: 'grey', endDate: '2025-11-23' },
+                        { id: 'nov_19', date: '2025-11-25', title: '구역 : 23윤', color: 'blue', endDate: '2025-11-25' },
+                        { id: 'nov_20', date: '2025-11-29', title: '대학부 15:00~16:30 윤p', color: 'yellow', endDate: '2025-11-29' },
+                        { id: 'nov_21', date: '2025-11-29', title: '청년회', color: 'yellow', endDate: '2025-11-29' },
+                        { id: 'nov_22', date: '2025-11-30', title: '청년회장단', color: 'grey', endDate: '2025-11-30' }
+                    ];
+                    calendarEvents = novemberEvents;
+                    await saveToFirebase('youthCalendarEvents', calendarEvents);
+                    console.log('11월 초기 일정 데이터가 추가되었습니다.');
+                }
+            }
+            
+            // Firebase에서 데이터가 없고 localStorage에 데이터가 있으면 경고
+            if (USE_FIREBASE && db) {
+                const localCalendarEvents = localStorage.getItem('youthCalendarEvents');
+                if (localCalendarEvents && calendarEvents.length === 0) {
+                    console.warn('Firebase에 데이터가 없고 로컬에 데이터가 있습니다. 동기화 버튼을 사용하세요.');
+                }
+            }
             
             // 초기 부서교제 데이터 (1/17 자기소개) - 데이터가 없을 때만 추가
             if (fellowshipData.length === 0) {
