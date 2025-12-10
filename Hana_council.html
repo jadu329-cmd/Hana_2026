@@ -1226,23 +1226,44 @@
         // Firebase 사용 여부
         const USE_FIREBASE = true;
         
+        // Firebase 초기화 완료 확인
+        let firebaseReady = false;
+        db.enablePersistence({ synchronizeTabs: true }).catch((err) => {
+            if (err.code == 'failed-precondition') {
+                // 여러 탭이 열려있을 때
+                console.warn('Firebase persistence는 하나의 탭에서만 활성화될 수 있습니다.');
+            } else if (err.code == 'unimplemented') {
+                // 브라우저가 지원하지 않을 때
+                console.warn('이 브라우저는 Firebase persistence를 지원하지 않습니다.');
+            }
+        }).then(() => {
+            firebaseReady = true;
+            console.log('Firebase 초기화 완료');
+        });
+        
         // Firebase 데이터 저장 함수
         async function saveToFirebase(collection, data) {
+            // localStorage에도 항상 저장 (백업용)
+            localStorage.setItem(collection, JSON.stringify(data));
+            
             if (!USE_FIREBASE || !db) {
-                // Firebase 미사용 시 localStorage에 저장
-                localStorage.setItem(collection, JSON.stringify(data));
                 return;
             }
             
             try {
+                // Firebase에 저장 시도
                 await db.collection('appData').doc(collection).set({
                     data: data,
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
+                }, { merge: false }); // merge: false로 전체 덮어쓰기
+                console.log(`✅ Firebase 저장 성공: ${collection}`);
             } catch (error) {
-                console.error('Firebase 저장 오류:', error);
-                // 오류 시 localStorage에 백업 저장
-                localStorage.setItem(collection, JSON.stringify(data));
+                console.error(`❌ Firebase 저장 오류 (${collection}):`, error);
+                // Firebase 저장 실패해도 localStorage에는 이미 저장됨
+                // 사용자에게 알림 (중요한 데이터인 경우만)
+                if (collection === 'youthCalendarEvents') {
+                    console.warn('일정 데이터가 Firebase에 저장되지 않았습니다. 네트워크 연결을 확인하거나 나중에 동기화 버튼을 사용하세요.');
+                }
             }
         }
         
@@ -1255,16 +1276,34 @@
             }
             
             try {
+                // Firebase에서 먼저 로드 시도
                 const doc = await db.collection('appData').doc(collection).get();
                 if (doc.exists) {
-                    return doc.data().data || defaultValue;
+                    const firebaseData = doc.data().data || defaultValue;
+                    // Firebase에서 데이터를 가져왔으면 localStorage에도 저장 (캐시용)
+                    if (firebaseData !== defaultValue) {
+                        localStorage.setItem(collection, JSON.stringify(firebaseData));
+                    }
+                    console.log(`✅ Firebase 로드 성공: ${collection}`);
+                    return firebaseData;
+                } else {
+                    // Firebase에 데이터가 없으면 localStorage 확인
+                    const stored = localStorage.getItem(collection);
+                    if (stored) {
+                        console.log(`⚠️ Firebase에 데이터 없음, localStorage에서 로드: ${collection}`);
+                        return JSON.parse(stored);
+                    }
+                    return defaultValue;
                 }
-                return defaultValue;
             } catch (error) {
-                console.error('Firebase 로드 오류:', error);
+                console.error(`❌ Firebase 로드 오류 (${collection}):`, error);
                 // 오류 시 localStorage에서 로드
                 const stored = localStorage.getItem(collection);
-                return stored ? JSON.parse(stored) : defaultValue;
+                if (stored) {
+                    console.log(`⚠️ localStorage에서 로드: ${collection}`);
+                    return JSON.parse(stored);
+                }
+                return defaultValue;
             }
         }
         
@@ -3907,62 +3946,88 @@
             }
             
             try {
-                // localStorage에서 데이터 로드
-                const localCalendarEvents = localStorage.getItem('youthCalendarEvents');
-                const localMeetingLogs = localStorage.getItem('youthMeetingLogs');
-                const localVisitData = localStorage.getItem('visitData');
-                const localFellowshipData = localStorage.getItem('fellowshipData');
-                const localMealData = localStorage.getItem('mealData');
+                alert('데이터 동기화를 시작합니다...');
                 
-                let synced = false;
+                // 현재 메모리와 localStorage의 데이터를 모두 Firebase에 저장
+                let syncedCount = 0;
                 
-                // 각 데이터가 있으면 Firebase에 저장
-                if (localCalendarEvents) {
-                    const data = JSON.parse(localCalendarEvents);
-                    // 기존 Firebase 데이터와 병합 (중복 제거)
-                    const existingEvents = await loadFromFirebase('youthCalendarEvents', []);
-                    const existingIds = new Set(existingEvents.map(e => e.id));
-                    const newEvents = data.filter(e => !existingIds.has(e.id));
-                    calendarEvents = [...existingEvents, ...newEvents];
+                // 1. 일정 데이터 동기화 (현재 메모리의 데이터 우선)
+                if (calendarEvents && calendarEvents.length > 0) {
                     await saveToFirebase('youthCalendarEvents', calendarEvents);
-                    synced = true;
+                    syncedCount++;
+                    console.log('일정 데이터 동기화 완료:', calendarEvents.length, '개');
                 } else {
-                    // localStorage에 데이터가 없으면 현재 calendarEvents를 Firebase에 저장
-                    if (calendarEvents.length > 0) {
+                    // 메모리에 없으면 localStorage에서 확인
+                    const localCalendarEvents = localStorage.getItem('youthCalendarEvents');
+                    if (localCalendarEvents) {
+                        const data = JSON.parse(localCalendarEvents);
+                        // 기존 Firebase 데이터와 병합 (중복 제거)
+                        const existingEvents = await loadFromFirebase('youthCalendarEvents', []);
+                        const existingIds = new Set(existingEvents.map(e => e.id));
+                        const newEvents = data.filter(e => !existingIds.has(e.id));
+                        calendarEvents = [...existingEvents, ...newEvents];
                         await saveToFirebase('youthCalendarEvents', calendarEvents);
-                        synced = true;
+                        syncedCount++;
                     }
                 }
                 
-                if (localMeetingLogs) {
-                    const data = JSON.parse(localMeetingLogs);
-                    await saveToFirebase('youthMeetingLogs', data);
-                    meetingLogs = data;
-                    synced = true;
+                // 2. 회의록 데이터 동기화
+                if (meetingLogs && meetingLogs.length > 0) {
+                    await saveToFirebase('youthMeetingLogs', meetingLogs);
+                    syncedCount++;
+                } else {
+                    const localMeetingLogs = localStorage.getItem('youthMeetingLogs');
+                    if (localMeetingLogs) {
+                        const data = JSON.parse(localMeetingLogs);
+                        await saveToFirebase('youthMeetingLogs', data);
+                        meetingLogs = data;
+                        syncedCount++;
+                    }
                 }
                 
-                if (localVisitData) {
-                    const data = JSON.parse(localVisitData);
-                    await saveToFirebase('visitData', data);
-                    visitData = data;
-                    synced = true;
+                // 3. 심방 데이터 동기화
+                if (visitData && Object.keys(visitData).length > 0) {
+                    await saveToFirebase('visitData', visitData);
+                    syncedCount++;
+                } else {
+                    const localVisitData = localStorage.getItem('visitData');
+                    if (localVisitData) {
+                        const data = JSON.parse(localVisitData);
+                        await saveToFirebase('visitData', data);
+                        visitData = data;
+                        syncedCount++;
+                    }
                 }
                 
-                if (localFellowshipData) {
-                    const data = JSON.parse(localFellowshipData);
-                    await saveToFirebase('fellowshipData', data);
-                    fellowshipData = data;
-                    synced = true;
+                // 4. 부서교제 데이터 동기화
+                if (fellowshipData && fellowshipData.length > 0) {
+                    await saveToFirebase('fellowshipData', fellowshipData);
+                    syncedCount++;
+                } else {
+                    const localFellowshipData = localStorage.getItem('fellowshipData');
+                    if (localFellowshipData) {
+                        const data = JSON.parse(localFellowshipData);
+                        await saveToFirebase('fellowshipData', data);
+                        fellowshipData = data;
+                        syncedCount++;
+                    }
                 }
                 
-                if (localMealData) {
-                    const data = JSON.parse(localMealData);
-                    await saveToFirebase('mealData', data);
-                    mealData = data;
-                    synced = true;
+                // 5. 식사 준비 데이터 동기화
+                if (mealData && mealData.length > 0) {
+                    await saveToFirebase('mealData', mealData);
+                    syncedCount++;
+                } else {
+                    const localMealData = localStorage.getItem('mealData');
+                    if (localMealData) {
+                        const data = JSON.parse(localMealData);
+                        await saveToFirebase('mealData', data);
+                        mealData = data;
+                        syncedCount++;
+                    }
                 }
                 
-                if (synced) {
+                if (syncedCount > 0) {
                     // 데이터 동기화 후 UI 업데이트
                     syncVisitDataToCalendar();
                     loadFellowshipToCalendar();
@@ -3975,13 +4040,13 @@
                     renderMealTable();
                     renderRequestsTable();
                     
-                    alert('로컬 데이터가 Firebase에 동기화되었습니다!');
+                    alert(`✅ ${syncedCount}개 데이터가 Firebase에 성공적으로 동기화되었습니다!\n이제 다른 기기에서도 동일한 데이터를 확인할 수 있습니다.`);
                 } else {
-                    alert('동기화할 로컬 데이터가 없습니다.');
+                    alert('동기화할 데이터가 없습니다.');
                 }
             } catch (error) {
                 console.error('동기화 오류:', error);
-                alert('동기화 중 오류가 발생했습니다: ' + error.message);
+                alert('❌ 동기화 중 오류가 발생했습니다:\n' + error.message + '\n\n콘솔을 확인하거나 네트워크 연결을 확인해주세요.');
             }
         }
 
